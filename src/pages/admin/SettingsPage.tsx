@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import {
 import { Box, Typography, Card, CardContent, Tabs, Tab, TextField, Button, Switch, FormControlLabel, Divider } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-} from '@mui/material';
 
 const SettingsPage: React.FC = () => {
   const [tab, setTab] = useState(0);
