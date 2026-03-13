@@ -22,44 +22,28 @@ const SettingsPage: React.FC = () => {
         </Box>
         <CardContent sx={{ p: 3 }}>
           {tab === 0 && (
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField label="App Name" fullWidth defaultValue="Souk IT" />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField label="Support Email" fullWidth defaultValue="support@soukit.com" />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField label="Default Currency" fullWidth defaultValue="USD" />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField label="Service Fee (%)" fullWidth defaultValue="12.5" type="number" />
-              </Grid>
-              <Grid size={12}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+              <TextField label="App Name" fullWidth defaultValue="Souk IT" />
+              <TextField label="Support Email" fullWidth defaultValue="support@soukit.com" />
+              <TextField label="Default Currency" fullWidth defaultValue="USD" />
+              <TextField label="Service Fee (%)" fullWidth defaultValue="12.5" type="number" />
+              <Box sx={{ gridColumn: '1 / -1' }}>
                 <FormControlLabel control={<Switch defaultChecked />} label="Enable notifications" />
-              </Grid>
-              <Grid size={12}>
+              </Box>
+              <Box sx={{ gridColumn: '1 / -1' }}>
                 <FormControlLabel control={<Switch defaultChecked />} label="Maintenance mode" />
-              </Grid>
-              <Grid size={12}>
+              </Box>
+              <Box sx={{ gridColumn: '1 / -1' }}>
                 <Button variant="contained">Save Settings</Button>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           )}
           {tab === 1 && (
-            <Box>
-              <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 2 }}>Security Settings</Typography>
-              <Grid container spacing={3}>
-                <Grid size={12}>
-                  <FormControlLabel control={<Switch defaultChecked />} label="Two-factor authentication" />
-                </Grid>
-                <Grid size={12}>
-                  <FormControlLabel control={<Switch defaultChecked />} label="Force password change every 90 days" />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField label="Session timeout (minutes)" fullWidth defaultValue="30" type="number" />
-                </Grid>
-              </Grid>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Typography sx={{ color: '#F8FAFC', fontWeight: 600 }}>Security Settings</Typography>
+              <FormControlLabel control={<Switch defaultChecked />} label="Two-factor authentication" />
+              <FormControlLabel control={<Switch defaultChecked />} label="Force password change every 90 days" />
+              <TextField label="Session timeout (minutes)" defaultValue="30" type="number" sx={{ maxWidth: 300 }} />
             </Box>
           )}
           {tab === 2 && (

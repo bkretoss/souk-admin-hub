@@ -53,43 +53,36 @@ const MediaPage: React.FC = () => {
         </Button>
       </Box>
 
-      <Grid container spacing={2}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)', lg: 'repeat(6, 1fr)' }, gap: 2 }}>
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => (
-            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={i}>
-              <Card sx={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CircularProgress size={24} />
-              </Card>
-            </Grid>
+            <Card key={i} sx={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress size={24} />
+            </Card>
           ))
         ) : files && files.length > 0 ? (
           files.filter(f => f.name !== '.emptyFolderPlaceholder').map((file) => (
-            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={file.name}>
-              <Card sx={{ overflow: 'hidden', cursor: 'pointer' }}>
-                <Box sx={{
-                  aspectRatio: '1', backgroundImage: `url(${getPublicUrl(file.name)})`,
-                  backgroundSize: 'cover', backgroundPosition: 'center',
-                  bgcolor: 'rgba(148,163,184,0.1)',
-                }} />
-                <CardContent sx={{ p: 1.5 }}>
-                  <Typography sx={{ fontSize: 12, color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {file.name}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))
-        ) : (
-          <Grid size={12}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center', py: 8 }}>
-                <CloudUpload sx={{ fontSize: 48, color: '#64748B', mb: 2 }} />
-                <Typography sx={{ color: '#64748B' }}>No media files yet. Upload your first file.</Typography>
+            <Card key={file.name} sx={{ overflow: 'hidden', cursor: 'pointer' }}>
+              <Box sx={{
+                aspectRatio: '1', backgroundImage: `url(${getPublicUrl(file.name)})`,
+                backgroundSize: 'cover', backgroundPosition: 'center', bgcolor: 'rgba(148,163,184,0.1)',
+              }} />
+              <CardContent sx={{ p: 1.5 }}>
+                <Typography sx={{ fontSize: 12, color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {file.name}
+                </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          ))
+        ) : (
+          <Card sx={{ gridColumn: '1 / -1' }}>
+            <CardContent sx={{ textAlign: 'center', py: 8 }}>
+              <CloudUpload sx={{ fontSize: 48, color: '#64748B', mb: 2 }} />
+              <Typography sx={{ color: '#64748B' }}>No media files yet. Upload your first file.</Typography>
+            </CardContent>
+          </Card>
         )}
-      </Grid>
+      </Box>
     </Box>
   );
 };
