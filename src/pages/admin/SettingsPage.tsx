@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, Card, CardContent, Tabs, Tab, TextField, Button,
-  Switch, FormControlLabel, Grid, Divider,
+  Switch, FormControlLabel, Grid2 as Grid, Divider,
 } from '@mui/material';
 
 const SettingsPage: React.FC = () => {
@@ -26,25 +26,25 @@ const SettingsPage: React.FC = () => {
         <CardContent sx={{ p: 3 }}>
           {tab === 0 && (
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField label="App Name" fullWidth defaultValue="Souk IT" />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField label="Support Email" fullWidth defaultValue="support@soukit.com" />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField label="Default Currency" fullWidth defaultValue="USD" />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField label="Service Fee (%)" fullWidth defaultValue="12.5" type="number" />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <FormControlLabel control={<Switch defaultChecked />} label="Enable notifications" />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <FormControlLabel control={<Switch defaultChecked />} label="Maintenance mode" />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Button variant="contained">Save Settings</Button>
               </Grid>
             </Grid>
@@ -53,13 +53,13 @@ const SettingsPage: React.FC = () => {
             <Box>
               <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 2 }}>Security Settings</Typography>
               <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <FormControlLabel control={<Switch defaultChecked />} label="Two-factor authentication" />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <FormControlLabel control={<Switch defaultChecked />} label="Force password change every 90 days" />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField label="Session timeout (minutes)" fullWidth defaultValue="30" type="number" />
                 </Grid>
               </Grid>

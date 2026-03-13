@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Grid, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Skeleton } from '@mui/material';
+import { Box, Grid2 as Grid, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Skeleton } from '@mui/material';
 import { People, ShoppingBag, ShoppingCart, Category } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import StatCard from '@/components/admin/StatCard';
@@ -30,22 +30,22 @@ const DashboardPage: React.FC = () => {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Grid item xs={12} sm={6} lg={3} key={i}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={i}>
               <Card><CardContent><Skeleton variant="rectangular" height={80} /></CardContent></Card>
             </Grid>
           ))
         ) : (
           <>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard title="Total Users" value={stats?.totalUsers ?? 0} change={12.5} icon={<People />} color="#3B82F6" />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard title="Total Products" value={stats?.totalProducts ?? 0} change={8.2} icon={<ShoppingBag />} color="#10B981" />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard title="Total Orders" value={stats?.totalOrders ?? 0} change={-3.1} icon={<ShoppingCart />} color="#F59E0B" />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard title="Categories" value={stats?.totalCategories ?? 0} change={5.0} icon={<Category />} color="#8B5CF6" />
             </Grid>
           </>

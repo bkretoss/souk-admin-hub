@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Box, Typography, Card, CardContent, Grid, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid2 as Grid, Button, CircularProgress } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -56,7 +56,7 @@ const MediaPage: React.FC = () => {
       <Grid container spacing={2}>
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => (
-            <Grid item xs={6} sm={4} md={3} lg={2} key={i}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={i}>
               <Card sx={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CircularProgress size={24} />
               </Card>
@@ -64,7 +64,7 @@ const MediaPage: React.FC = () => {
           ))
         ) : files && files.length > 0 ? (
           files.filter(f => f.name !== '.emptyFolderPlaceholder').map((file) => (
-            <Grid item xs={6} sm={4} md={3} lg={2} key={file.name}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={file.name}>
               <Card sx={{ overflow: 'hidden', cursor: 'pointer' }}>
                 <Box sx={{
                   aspectRatio: '1', backgroundImage: `url(${getPublicUrl(file.name)})`,
@@ -80,7 +80,7 @@ const MediaPage: React.FC = () => {
             </Grid>
           ))
         ) : (
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Card>
               <CardContent sx={{ textAlign: 'center', py: 8 }}>
                 <CloudUpload sx={{ fontSize: 48, color: '#64748B', mb: 2 }} />
