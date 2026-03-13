@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Button, CircularProgress } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import { CloudUpload } from '@mui/icons-material';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Skeleton } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Skeleton, Grid } from '@mui/material';
 import { People, ShoppingBag, ShoppingCart, Category } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import StatCard from '@/components/admin/StatCard';
