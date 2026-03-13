@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  Box, Typography, Card, CardContent, Tabs, Tab, TextField, Button,
-  Switch, FormControlLabel, Grid2 as Grid, Divider,
+import { Box, Typography, Card, CardContent, Tabs, Tab, TextField, Button, Switch, FormControlLabel, Divider } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 } from '@mui/material';
 
 const SettingsPage: React.FC = () => {
