@@ -348,7 +348,7 @@ const ProductsPage: React.FC = () => {
                   value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <TextField
                   label="Condition" fullWidth size="small" select
                   value={form.condition} onChange={(e) => setForm({ ...form, condition: e.target.value })}
