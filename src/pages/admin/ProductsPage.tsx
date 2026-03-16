@@ -330,7 +330,7 @@ const ProductsPage: React.FC = () => {
                   InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <TextField
                   label="Category *" fullWidth size="small" select
                   value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}
