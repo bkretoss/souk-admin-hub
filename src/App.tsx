@@ -24,8 +24,8 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0F172A' }}>
-      <CircularProgress />
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0B0B0F' }}>
+      <CircularProgress sx={{ color: '#7C3AED' }} />
     </Box>
   );
   if (!user) return <Navigate to="/login" replace />;
@@ -36,7 +36,7 @@ const AppRoutes = () => {
   const { user, loading } = useAuth();
 
   if (loading) return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0F172A' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0B0B0F' }}>
       <CircularProgress />
     </Box>
   );

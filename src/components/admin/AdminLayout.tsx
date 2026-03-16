@@ -8,7 +8,7 @@ const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0F172A' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0B0B0F' }}>
       <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TopNavbar />
