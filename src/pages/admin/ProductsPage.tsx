@@ -299,7 +299,7 @@ const ProductsPage: React.FC = () => {
                 ['Material', viewProduct.material || '—'],
                 ['Location', viewProduct.location || '—'],
               ].map(([label, value]) => (
-                <Grid item xs={6} key={label}>
+                <Grid size={6} key={label}>
                   <Typography variant="caption" sx={{ color: '#64748B' }}>{label}</Typography>
                   <Typography variant="body2" sx={{ color: '#F8FAFC' }}>{value}</Typography>
                 </Grid>
