@@ -121,6 +121,30 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -165,35 +189,74 @@ export type Database = {
           },
         ]
       }
-      notifications: {
+      notification_settings: {
         Row: {
-          created_at: string
-          data: Json | null
+          created_at: string | null
+          email_notifications: boolean | null
+          general_notifications: boolean | null
           id: string
-          is_read: boolean
-          message: string
-          title: string
-          type: string
+          message_notifications: boolean | null
+          payment_notifications: boolean | null
+          update_notifications: boolean | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
-          data?: Json | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          general_notifications?: boolean | null
           id?: string
-          is_read?: boolean
-          message?: string
-          title: string
-          type: string
+          message_notifications?: boolean | null
+          payment_notifications?: boolean | null
+          update_notifications?: boolean | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
+          email_notifications?: boolean | null
+          general_notifications?: boolean | null
+          id?: string
+          message_notifications?: boolean | null
+          payment_notifications?: boolean | null
+          update_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          id: string
+          is_read: boolean | null
+          message: string
+          read_at: string | null
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
           data?: Json | null
           id?: string
-          is_read?: boolean
+          is_read?: boolean | null
+          message: string
+          read_at?: string | null
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
           message?: string
+          read_at?: string | null
           title?: string
-          type?: string
+          type?: string | null
           user_id?: string
         }
         Relationships: []
@@ -355,48 +418,80 @@ export type Database = {
       }
       profiles: {
         Row: {
+          collection_address: Json | null
           country_code: string
           created_at: string
           date_of_birth: string
+          delivery_address: Json | null
           email: string
           fcm_token: string | null
           first_name: string
+          full_name: string | null
           gender: string | null
           id: string
           last_name: string
+          location_id: string | null
           phone_number: string
+          profile_image: string | null
+          role: string | null
           updated_at: string
+          user_description: string | null
           user_id: string
+          username: string | null
         }
         Insert: {
+          collection_address?: Json | null
           country_code: string
           created_at?: string
           date_of_birth: string
+          delivery_address?: Json | null
           email: string
           fcm_token?: string | null
           first_name: string
+          full_name?: string | null
           gender?: string | null
           id?: string
           last_name: string
+          location_id?: string | null
           phone_number: string
+          profile_image?: string | null
+          role?: string | null
           updated_at?: string
+          user_description?: string | null
           user_id: string
+          username?: string | null
         }
         Update: {
+          collection_address?: Json | null
           country_code?: string
           created_at?: string
           date_of_birth?: string
+          delivery_address?: Json | null
           email?: string
           fcm_token?: string | null
           first_name?: string
+          full_name?: string | null
           gender?: string | null
           id?: string
           last_name?: string
+          location_id?: string | null
           phone_number?: string
+          profile_image?: string | null
+          role?: string | null
           updated_at?: string
+          user_description?: string | null
           user_id?: string
+          username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sub_categories: {
         Row: {
@@ -429,24 +524,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_roles: {
-        Row: {
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
       }
       wishlist: {
         Row: {
@@ -482,16 +559,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      validate_address: { Args: { address: Json }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -618,8 +689,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "moderator", "user"],
-    },
+    Enums: {},
   },
 } as const
