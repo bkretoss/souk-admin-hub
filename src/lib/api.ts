@@ -26,6 +26,11 @@ export const productsApi = {
     if (error) throw error;
     return data;
   },
+  getById: async (id: string) => {
+    const { data, error } = await supabase.from('products').select('*, categories(name)').eq('id', id).single();
+    if (error) throw error;
+    return data;
+  },
   create: async (product: any) => {
     const { data, error } = await supabase.from('products').insert([product]).select().single();
     if (error) throw error;
