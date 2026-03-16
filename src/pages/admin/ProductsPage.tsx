@@ -342,7 +342,7 @@ const ProductsPage: React.FC = () => {
               </Grid>
             </Grid>
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <TextField
                   label="Brand" fullWidth size="small"
                   value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })}
