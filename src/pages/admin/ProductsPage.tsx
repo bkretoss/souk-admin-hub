@@ -323,7 +323,7 @@ const ProductsPage: React.FC = () => {
               value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <TextField
                   label="Price *" fullWidth size="small" type="number"
                   value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
