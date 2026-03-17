@@ -347,58 +347,86 @@ const ProductsPage: React.FC = () => {
       <Dialog open={!!viewProduct} onClose={() => setViewProduct(null)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           Product Details
-          <IconButton size="small" onClick={() => setViewProduct(null)}>
-            <Close />
-          </IconButton>
+          <IconButton size="small" onClick={() => setViewProduct(null)}><Close /></IconButton>
         </DialogTitle>
         {viewProduct && (
-          <DialogContent dividers>
-            {viewProduct.images?.[0] && (
+          <DialogContent dividers sx={{ p: 3 }}>
+
+            {/* Image */}
+            {viewProduct.images?.[0] ? (
               <Box
                 component="img"
                 src={viewProduct.images[0]}
                 alt={viewProduct.title}
-                sx={{ width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 2, mb: 2 }}
+                sx={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 2, mb: 3 }}
               />
+            ) : (
+              <Box sx={{ width: '100%', height: 120, borderRadius: 2, mb: 3, bgcolor: 'rgba(148,163,184,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography sx={{ color: '#64748B', fontSize: 13 }}>No Image</Typography>
+              </Box>
             )}
-            <Typography variant="h6" sx={{ color: "#F8FAFC", mb: 1 }}>
-              {viewProduct.title}
-            </Typography>
-            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-              <Chip label={`$${viewProduct.price}`} color="primary" size="small" />
-              <Chip
-                label={viewProduct.condition ?? "new"}
-                size="small"
-                sx={{ bgcolor: "rgba(59,130,246,0.12)", color: "#60A5FA" }}
-              />
-              <Chip
-                label={viewProduct.is_sold ? "Sold" : "Available"}
-                size="small"
-                color={viewProduct.is_sold ? "error" : "success"}
-              />
-            </Stack>
-            <Typography variant="body2" sx={{ color: "#94A3B8", mb: 2 }}>
-              {viewProduct.description || "No description provided."}
-            </Typography>
-            <Grid container spacing={2}>
-              {[
-                ["Category", (viewProduct as any).categories?.name ?? "—"],
-                ["Brand", viewProduct.brand || "—"],
-                ["Color", viewProduct.color || "—"],
-                ["Size", viewProduct.size || "—"],
-                ["Material", viewProduct.material || "—"],
-                ["Location", viewProduct.location || "—"],
-              ].map(([label, value]) => (
-                <Grid size={6} key={label}>
-                  <Typography variant="caption" sx={{ color: "#64748B" }}>
-                    {label}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#F8FAFC" }}>
-                    {value}
-                  </Typography>
-                </Grid>
-              ))}
-            </Grid>
+
+            {/* Product Info */}
+            <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>PRODUCT INFO</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1, mb: 3 }}>
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Product Name</Typography>
+                <Typography sx={{ color: '#F1F5F9', fontSize: 14, fontWeight: 600 }}>{viewProduct.title}</Typography>
+              </Box>
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Description</Typography>
+                <Typography sx={{ color: '#94A3B8', fontSize: 13, lineHeight: 1.6 }}>{viewProduct.description || '—'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Category</Typography>
+                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{(viewProduct as any).categories?.name ?? '—'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Brand</Typography>
+                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{viewProduct.brand || '—'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Condition</Typography>
+                <Chip label={viewProduct.condition ?? 'new'} size="small" sx={{ bgcolor: 'rgba(59,130,246,0.12)', color: '#60A5FA', fontSize: 12, mt: 0.5 }} />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Created Date</Typography>
+                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{new Date(viewProduct.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</Typography>
+              </Box>
+            </Box>
+
+            {/* Pricing */}
+            <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>PRICING</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1, mb: 3 }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Price</Typography>
+                <Typography sx={{ color: '#34D399', fontSize: 18, fontWeight: 700 }}>${Number(viewProduct.price).toFixed(2)}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Service Fee</Typography>
+                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{viewProduct.service_fee_percentage ?? 0}%</Typography>
+              </Box>
+            </Box>
+
+            {/* Status */}
+            <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>STATUS</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Sold Status</Typography>
+                <Box sx={{ mt: 0.5 }}>
+                  <Chip
+                    label={viewProduct.is_sold ? 'Sold' : 'Available'}
+                    size="small"
+                    color={viewProduct.is_sold ? 'error' : 'success'}
+                  />
+                </Box>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>Location</Typography>
+                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{viewProduct.location || '—'}</Typography>
+              </Box>
+            </Box>
+
           </DialogContent>
         )}
       </Dialog>
