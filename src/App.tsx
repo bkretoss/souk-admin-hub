@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import Sonner from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import muiTheme from "@/theme/muiTheme";
 import LoginPage from "@/pages/LoginPage";
@@ -12,6 +12,7 @@ import UsersPage from "@/pages/admin/UsersPage";
 import ProductsPage from "@/pages/admin/ProductsPage";
 import OrdersPage from "@/pages/admin/OrdersPage";
 import CategoriesPage from "@/pages/admin/CategoriesPage";
+import LocationsPage from "@/pages/admin/LocationsPage";
 import MediaPage from "@/pages/admin/MediaPage";
 import ContentPage from "@/pages/admin/ContentPage";
 import NotificationsPage from "@/pages/admin/NotificationsPage";
@@ -51,6 +52,7 @@ const AppRoutes = () => {
         <Route path="products" element={<ProductsPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="categories" element={<CategoriesPage />} />
+        <Route path="locations" element={<LocationsPage />} />
         <Route path="media" element={<MediaPage />} />
         <Route path="content" element={<ContentPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
@@ -66,7 +68,7 @@ const App = () => (
     <CssBaseline />
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Sonner />
+        <Sonner position="top-right" />
         <BrowserRouter>
           <AppRoutes />
         </BrowserRouter>

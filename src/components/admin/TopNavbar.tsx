@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar, Toolbar, InputBase, IconButton, Badge, Avatar,
   Box, Menu, MenuItem, Typography, Divider,
 } from '@mui/material';
 import { Search, NotificationsOutlined, FullscreenOutlined } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const TopNavbar: React.FC = () => {
   const { user, signOut } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [displayName, setDisplayName] = useState<string>('');
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        setDisplayName(
+          data?.full_name ||
+          user.user_metadata?.full_name ||
+          user.email?.split('@')[0] ||
+          'Admin'
+        );
+      });
+  }, [user]);
 
   return (
     <AppBar position="sticky" elevation={0}>
@@ -40,10 +59,7 @@ const TopNavbar: React.FC = () => {
         >
           <Box sx={{ display: { xs: 'none', md: 'block' }, textAlign: 'right' }}>
             <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#F1F5F9', lineHeight: 1.3 }}>
-              Marcus Smith
-            </Typography>
-            <Typography sx={{ fontSize: 11, color: '#7C3AED', fontWeight: 500, lineHeight: 1.3, letterSpacing: '0.03em' }}>
-              SUPER ADMIN
+              {displayName}
             </Typography>
           </Box>
           <Avatar sx={{

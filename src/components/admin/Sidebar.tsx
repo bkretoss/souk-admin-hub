@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   Box, Typography, IconButton, Divider, Avatar,
 } from '@mui/material';
 import {
   Dashboard, People, ShoppingBag, ShoppingCart, Category,
-  CloudUpload, Article, Notifications, Settings,
-  ChevronLeft, ChevronRight, Logout, LocalOffer, CardMembership,
+  CloudUpload, Article, Notifications, Settings, LocationOn,
+  ChevronLeft, ChevronRight, Logout,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const DRAWER_WIDTH = 250;
 const DRAWER_COLLAPSED = 72;
@@ -25,9 +26,10 @@ const menuItems = [
   { text: 'Products', icon: <ShoppingBag />, path: '/admin/products' },
   { text: 'Orders', icon: <ShoppingCart />, path: '/admin/orders' },
   { text: 'Categories', icon: <Category />, path: '/admin/categories' },
-  { text: 'Coupons', icon: <LocalOffer />, path: '/admin/content' },
-  { text: 'Subscriptions', icon: <CardMembership />, path: '/admin/notifications' },
+  { text: 'Locations', icon: <LocationOn />, path: '/admin/locations' },
   { text: 'Media', icon: <CloudUpload />, path: '/admin/media' },
+  { text: 'Content', icon: <Article />, path: '/admin/content' },
+  { text: 'Notifications', icon: <Notifications />, path: '/admin/notifications' },
   { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
 ];
 
@@ -35,6 +37,24 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const [displayName, setDisplayName] = useState<string>('');
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        setDisplayName(
+          data?.full_name ||
+          user.user_metadata?.full_name ||
+          user.email?.split('@')[0] ||
+          'Admin'
+        );
+      });
+  }, [user]);
 
   const isActive = (path: string) => {
     if (path === '/admin') return location.pathname === '/admin';
@@ -57,21 +77,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       }}
     >
       {/* Logo */}
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 2.5, minHeight: 64, gap: 1.5 }}>
-        <Box sx={{
-          width: 36, height: 36, borderRadius: 2,
-          background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 16px rgba(124, 58, 237, 0.4)',
-          fontSize: 14, fontWeight: 800, color: '#fff',
-        }}>
-          SI
-        </Box>
-        {open && (
-          <Typography sx={{ fontSize: 17, fontWeight: 700, color: '#F1F5F9', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
-            Souk IT
-          </Typography>
-        )}
+      <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, py: 2, minHeight: 72 }}>
+        <Box
+          component="img"
+          src="/images/logo.png"
+          alt="Souk IT"
+          sx={{ height: 56, maxWidth: open ? 160 : 48, objectFit: 'contain', transition: 'max-width 0.25s cubic-bezier(.4,0,.2,1)', flexShrink: 0 }}
+        />
         <IconButton onClick={onToggle} sx={{ ml: 'auto', color: '#64748B', '&:hover': { color: '#A78BFA' } }}>
           {open ? <ChevronLeft /> : <ChevronRight />}
         </IconButton>
@@ -143,10 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             </Avatar>
             <Box sx={{ overflow: 'hidden' }}>
               <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#F1F5F9', lineHeight: 1.3 }}>
-                Marcus Smith
-              </Typography>
-              <Typography sx={{ fontSize: 11, color: '#7C3AED', fontWeight: 500, lineHeight: 1.3 }}>
-                SUPER ADMIN
+                {displayName}
               </Typography>
             </Box>
             <IconButton onClick={signOut} sx={{ ml: 'auto', color: '#64748B', '&:hover': { color: '#F43F5E' } }} size="small">
