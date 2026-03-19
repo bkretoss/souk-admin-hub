@@ -6,6 +6,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button,
 } from '@mui/material';
 import { Search, Visibility, Delete, Close } from '@mui/icons-material';
+import DateRangePicker from '@/components/admin/DateRangePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrders, updateOrder, deleteOrder } from '@/lib/api/ordersApi';
 import { toast } from 'sonner';
@@ -20,6 +21,7 @@ const OrdersPage: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const [viewOrder, setViewOrder] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -27,8 +29,8 @@ const OrdersPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ['orders'],
-    queryFn: getOrders,
+    queryKey: ['orders', dateRange.startDate, dateRange.endDate],
+    queryFn: () => getOrders(dateRange.startDate || undefined, dateRange.endDate || undefined),
   });
 
   const statusMutation = useMutation({
@@ -86,7 +88,7 @@ const OrdersPage: React.FC = () => {
         </Box>
       </Box>
 
-      <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
           size="small"
           placeholder="Search by product name…"
@@ -123,6 +125,12 @@ const OrdersPage: React.FC = () => {
           <MenuItem value="shipped">Shipped</MenuItem>
           <MenuItem value="cancelled">Cancelled</MenuItem>
         </Select>
+
+        <DateRangePicker
+          value={dateRange}
+          onChange={(v) => { setDateRange(v); setPage(0); }}
+          onClear={() => { setDateRange({ startDate: '', endDate: '' }); setPage(0); }}
+        />
       </Box>
 
       <Card>

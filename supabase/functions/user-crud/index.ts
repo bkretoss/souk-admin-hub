@@ -28,6 +28,7 @@ serve(async (req) => {
       const { data, error } = await client
         .from("profiles")
         .select("*")
+        .neq("role", "admin")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return json({ success: true, data: data ?? [], total: data?.length ?? 0 });
@@ -68,8 +69,7 @@ serve(async (req) => {
       for (const key of allowed) {
         if (body[key] !== undefined) updates[key] = body[key];
       }
-      if (Object.keys(updates).length === 0)
-        return json({ success: false, message: "No valid fields to update" }, 400);
+      if (Object.keys(updates).length === 0) return json({ success: false, message: "No valid fields to update" }, 400);
       const { data, error } = await client.from("profiles").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return json({ success: true, data });

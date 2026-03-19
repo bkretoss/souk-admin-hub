@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -11,59 +11,56 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   IconButton,
-  TextField,
   Skeleton,
-  InputAdornment,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
-  MenuItem,
-  Avatar,
+  TextField,
   Tooltip,
-  Stack,
   Select,
+  MenuItem,
   CircularProgress,
+  TablePagination,
+  Chip,
+  Avatar,
 } from "@mui/material";
-import { Add, Edit, Delete, Search, Visibility, Close, CloudUpload } from "@mui/icons-material";
+import { Add, Visibility, Edit, Delete, Close, Search } from "@mui/icons-material";
+import InputAdornment from "@mui/material/InputAdornment";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getProducts, createProduct, updateProduct, deleteProduct } from '@/lib/api/productsApi';
-import { getCategories } from '@/lib/api/categoriesApi';
+import { getProducts, createProduct, updateProduct, deleteProduct, type Product } from "@/lib/api/productsApi";
+import { getCategories } from "@/lib/api/categoriesApi";
+import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
 
-interface ProductFormData {
-  title: string;
-  description: string;
-  price: string;
-  category_id: string;
-  brand: string;
-  condition: string;
-  images: string[];
-}
+const CONDITIONS = ["new", "like new", "good", "fair", "poor"] as const;
 
-const emptyForm: ProductFormData = {
+const EMPTY_FORM = {
   title: "",
-  description: "",
-  price: "",
-  category_id: "",
   brand: "",
+  price: "",
   condition: "new",
-  images: [],
+  category_id: "",
+  description: "",
+  is_sold: false,
 };
 
 const ProductsPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [viewItem, setViewItem] = useState<Product | null>(null);
+  const [formDialog, setFormDialog] = useState<{ mode: "add" | "edit"; data?: Product } | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [viewProduct, setViewProduct] = useState<any>(null);
-  const [editProduct, setEditProduct] = useState<any>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState<ProductFormData>(emptyForm);
-  const [imageUrl, setImageUrl] = useState("");
-  const [soldUpdatingId, setSoldUpdatingId] = useState<string | null>(null);
+  const [updatingSoldId, setUpdatingSoldId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [conditionFilter, setConditionFilter] = useState("all");
+  const [soldFilter, setSoldFilter] = useState<"all" | "available" | "sold">("all");
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
@@ -75,112 +72,109 @@ const ProductsPage: React.FC = () => {
     queryFn: getCategories,
   });
 
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createProduct({
+        title: form.title,
+        brand: form.brand || null,
+        price: parseFloat(form.price),
+        condition: form.condition,
+        category_id: form.category_id,
+        description: form.description || null,
+        is_sold: form.is_sold,
+        seller_id: "00000000-0000-0000-0000-000000000000",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setFormDialog(null);
+      toast.success("Product created successfully!");
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Failed to create product"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (id: string) =>
+      updateProduct(id, {
+        title: form.title,
+        brand: form.brand || null,
+        price: parseFloat(form.price),
+        condition: form.condition,
+        category_id: form.category_id,
+        description: form.description || null,
+        is_sold: form.is_sold,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setFormDialog(null);
+      toast.success("Product updated successfully!");
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Failed to update product"),
+  });
+
+  const soldMutation = useMutation({
+    mutationFn: ({ id, is_sold }: { id: string; is_sold: boolean }) => updateProduct(id, { is_sold }),
+    onMutate: ({ id }) => setUpdatingSoldId(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Status updated successfully!");
+    },
+    onError: () => toast.error("Failed to update status"),
+    onSettled: () => setUpdatingSoldId(null),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setDeleteId(null);
-      toast.success("Product deleted successfully");
+      toast.success("Product deleted successfully!");
     },
     onError: () => toast.error("Failed to delete product"),
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data: any) => createProduct(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      handleCloseForm();
-      toast.success("Product created successfully");
-    },
-    onError: () => toast.error("Failed to create product"),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateProduct(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      handleCloseForm();
-      toast.success("Product updated successfully");
-    },
-    onError: () => toast.error("Failed to update product"),
-  });
-
-  const filtered = products?.filter((p) => `${p.title} ${p.brand}`.toLowerCase().includes(search.toLowerCase()));
-
-  const handleOpenAdd = () => {
-    setEditProduct(null);
-    setForm(emptyForm);
-    setImageUrl("");
-    setFormOpen(true);
+  const openAdd = () => {
+    setForm(EMPTY_FORM);
+    setFormDialog({ mode: "add" });
   };
 
-  const handleOpenEdit = (product: any) => {
-    setEditProduct(product);
+  const openEdit = (product: Product) => {
     setForm({
-      title: product.title || "",
-      description: product.description || "",
-      price: String(product.price || ""),
-      category_id: product.category_id || "",
-      brand: product.brand || "",
-      condition: product.condition || "new",
-      images: product.images || [],
+      title: product.title,
+      brand: product.brand ?? "",
+      price: String(product.price),
+      condition: product.condition ?? "new",
+      category_id: product.category_id,
+      description: product.description ?? "",
+      is_sold: product.is_sold,
     });
-    setImageUrl("");
-    setFormOpen(true);
+    setFormDialog({ mode: "edit", data: product });
   };
 
-  const handleCloseForm = () => {
-    setFormOpen(false);
-    setEditProduct(null);
-    setForm(emptyForm);
-    setImageUrl("");
+  const handleSave = () => {
+    if (formDialog?.mode === "add") createMutation.mutate();
+    else if (formDialog?.mode === "edit") updateMutation.mutate(formDialog.data!.id);
   };
-
-  const handleAddImage = () => {
-    if (imageUrl.trim()) {
-      setForm((f) => ({ ...f, images: [...f.images, imageUrl.trim()] }));
-      setImageUrl("");
-    }
-  };
-
-  const handleRemoveImage = (idx: number) => {
-    setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== idx) }));
-  };
-
-  const handleSubmit = () => {
-    if (!form.title || !form.price || !form.category_id) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-    const payload = {
-      title: form.title,
-      description: form.description,
-      price: parseFloat(form.price),
-      category_id: form.category_id,
-      brand: form.brand,
-      condition: form.condition,
-      images: form.images,
-    };
-    if (editProduct) {
-      updateMutation.mutate({ id: editProduct.id, data: payload });
-    } else {
-      createMutation.mutate({ ...payload, seller_id: "00000000-0000-0000-0000-000000000000" });
-    }
-  };
-
-  const soldStatusMutation = useMutation({
-    mutationFn: ({ id, is_sold }: { id: string; is_sold: boolean }) =>
-      updateProduct(id, { is_sold }),
-    onMutate: ({ id }) => setSoldUpdatingId(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Sold status updated");
-    },
-    onError: () => toast.error("Failed to update sold status"),
-    onSettled: () => setSoldUpdatingId(null),
-  });
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return (products ?? []).filter((p) => {
+      const matchSearch =
+        !q || p.title?.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q);
+      const matchCategory = categoryFilter === "all" || p.category_id === categoryFilter;
+      const matchCondition = conditionFilter === "all" || p.condition === conditionFilter;
+      const matchSold =
+        soldFilter === "all" ||
+        (soldFilter === "available" ? !p.is_sold : p.is_sold);
+      return matchSearch && matchCategory && matchCondition && matchSold;
+    });
+  }, [products, search, categoryFilter, conditionFilter, soldFilter]);
+
+  const paginated = useMemo(
+    () => filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filtered, page, rowsPerPage],
+  );
 
   return (
     <Box>
@@ -193,33 +187,110 @@ const ProductsPage: React.FC = () => {
             Products
           </Typography>
           <Typography variant="body2" sx={{ color: "#64748B" }}>
-            Manage your product listings · {products?.length ?? 0} total
+            Manage product listings · {products?.length ?? 0} total
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpenAdd}>
+        <Button variant="contained" startIcon={<Add />} onClick={openAdd}>
           Add Product
         </Button>
+      </Box>
+
+      {/* Filters */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
+        <TextField
+          size="small"
+          placeholder="Search by name or brand…"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search sx={{ color: "#94A3B8", fontSize: 18 }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            width: "25%",
+            "& .MuiOutlinedInput-root": {
+              color: "#F1F5F9",
+              bgcolor: "rgba(255,255,255,0.05)",
+              "& fieldset": { borderColor: "rgba(255,255,255,0.15)" },
+              "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" },
+              "&.Mui-focused fieldset": { borderColor: "#7C3AED" },
+            },
+            "& input::placeholder": { color: "#64748B", opacity: 1 },
+          }}
+        />
+
+        <FormControl size="small" sx={{ width: "15%" }}>
+          <InputLabel sx={{ color: "#94A3B8", "&.Mui-focused": { color: "#7C3AED" } }}>Category</InputLabel>
+          <Select
+            label="Category"
+            value={categoryFilter}
+            onChange={(e) => { setCategoryFilter(e.target.value); setPage(0); }}
+            sx={{
+              color: "#F1F5F9",
+              bgcolor: "rgba(255,255,255,0.05)",
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.15)" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.3)" },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#7C3AED" },
+              "& .MuiSelect-icon": { color: "#94A3B8" },
+            }}
+          >
+            <MenuItem value="all">All Categories</MenuItem>
+            {(categories ?? []).map((c: any) => (
+              <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ width: "13%" }}>
+          <InputLabel sx={{ color: "#94A3B8", "&.Mui-focused": { color: "#7C3AED" } }}>Condition</InputLabel>
+          <Select
+            label="Condition"
+            value={conditionFilter}
+            onChange={(e) => { setConditionFilter(e.target.value); setPage(0); }}
+            sx={{
+              color: "#F1F5F9",
+              bgcolor: "rgba(255,255,255,0.05)",
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.15)" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.3)" },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#7C3AED" },
+              "& .MuiSelect-icon": { color: "#94A3B8" },
+            }}
+          >
+            <MenuItem value="all">All Conditions</MenuItem>
+            {CONDITIONS.map((c) => (
+              <MenuItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ width: "12%" }}>
+          <InputLabel sx={{ color: "#94A3B8", "&.Mui-focused": { color: "#7C3AED" } }}>Status</InputLabel>
+          <Select
+            label="Status"
+            value={soldFilter}
+            onChange={(e) => { setSoldFilter(e.target.value as typeof soldFilter); setPage(0); }}
+            sx={{
+              color: "#F1F5F9",
+              bgcolor: "rgba(255,255,255,0.05)",
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.15)" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.3)" },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#7C3AED" },
+              "& .MuiSelect-icon": { color: "#94A3B8" },
+            }}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="available" sx={{ color: "#10B981" }}>Available</MenuItem>
+            <MenuItem value="sold" sx={{ color: "#EF4444" }}>Sold</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
 
       {/* Table Card */}
       <Card>
         <CardContent sx={{ p: 0 }}>
-          <Box sx={{ px: 3, py: 2, borderBottom: "1px solid rgba(148,163,184,0.08)" }}>
-            <TextField
-              size="small"
-              placeholder="Search products…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: "#64748B", fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ width: { xs: "100%", sm: 320 } }}
-            />
-          </Box>
           <TableContainer>
             <Table>
               <TableHead>
@@ -228,7 +299,8 @@ const ProductsPage: React.FC = () => {
                   <TableCell>Category</TableCell>
                   <TableCell>Price</TableCell>
                   <TableCell>Condition</TableCell>
-                  <TableCell>Sold Status</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Created Date</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -237,23 +309,22 @@ const ProductsPage: React.FC = () => {
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
                       {Array.from({ length: 7 }).map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton variant="text" />
-                        </TableCell>
+                        <TableCell key={j}><Skeleton variant="text" /></TableCell>
                       ))}
                     </TableRow>
                   ))
-                ) : filtered && filtered.length > 0 ? (
-                  filtered.map((product) => (
+                ) : paginated.length > 0 ? (
+                  paginated.map((product) => (
                     <TableRow key={product.id} sx={{ "&:hover": { bgcolor: "rgba(148,163,184,0.04)" } }}>
+                      {/* Product Name + Brand */}
                       <TableCell>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                           <Avatar
                             variant="rounded"
                             src={product.images?.[0]}
-                            sx={{ width: 44, height: 44, bgcolor: "rgba(148,163,184,0.1)", borderRadius: 2 }}
+                            sx={{ width: 40, height: 40, bgcolor: "rgba(148,163,184,0.1)", borderRadius: 1.5, fontSize: 14 }}
                           >
-                            {product.title?.[0] || "?"}
+                            {product.title?.[0] ?? "?"}
                           </Avatar>
                           <Box>
                             <Typography sx={{ color: "#F8FAFC", fontSize: 14, fontWeight: 500 }}>
@@ -265,60 +336,73 @@ const ProductsPage: React.FC = () => {
                           </Box>
                         </Box>
                       </TableCell>
+
+                      {/* Category */}
                       <TableCell sx={{ color: "#94A3B8", fontSize: 13 }}>
-                        {(product as any).categories?.name ?? "—"}
+                        {product.categories?.name ?? "—"}
                       </TableCell>
-                      <TableCell sx={{ color: "#F8FAFC", fontWeight: 600, fontSize: 14 }}>${product.price}</TableCell>
+
+                      {/* Price */}
+                      <TableCell sx={{ color: "#34D399", fontWeight: 600, fontSize: 14 }}>
+                        ${Number(product.price).toFixed(2)}
+                      </TableCell>
+
+                      {/* Condition */}
                       <TableCell>
                         <Chip
                           label={product.condition ?? "new"}
                           size="small"
-                          sx={{ bgcolor: "rgba(59,130,246,0.12)", color: "#60A5FA", fontSize: 12 }}
+                          sx={{ bgcolor: "rgba(124,58,237,0.12)", color: "#A78BFA", fontSize: 12, fontWeight: 500 }}
                         />
                       </TableCell>
+
+                      {/* Sold Status toggle */}
                       <TableCell>
-                        {soldUpdatingId === product.id ? (
-                          <CircularProgress size={18} sx={{ color: "#60A5FA" }} />
-                        ) : (
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <Select
                             size="small"
-                            value={product.is_sold ? "Sold" : "Available"}
+                            value={product.is_sold ? "sold" : "available"}
+                            disabled={updatingSoldId === product.id}
                             onChange={(e) =>
-                              soldStatusMutation.mutate({
-                                id: product.id,
-                                is_sold: e.target.value === "Sold",
-                              })
+                              soldMutation.mutate({ id: product.id, is_sold: e.target.value === "sold" })
                             }
                             sx={{
-                              fontSize: 13,
-                              minWidth: 120,
-                              color: product.is_sold ? "#EF4444" : "#22C55E",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              minWidth: 110,
+                              color: product.is_sold ? "#EF4444" : "#10B981",
+                              bgcolor: product.is_sold ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)",
+                              borderRadius: 2,
                               "& .MuiOutlinedInput-notchedOutline": {
-                                borderColor: product.is_sold
-                                  ? "rgba(239,68,68,0.3)"
-                                  : "rgba(34,197,94,0.3)",
+                                borderColor: product.is_sold ? "#EF444433" : "#10B98133",
                               },
                               "&:hover .MuiOutlinedInput-notchedOutline": {
-                                borderColor: product.is_sold ? "#EF4444" : "#22C55E",
+                                borderColor: product.is_sold ? "#EF4444" : "#10B981",
                               },
-                              bgcolor: product.is_sold
-                                ? "rgba(239,68,68,0.08)"
-                                : "rgba(34,197,94,0.08)",
+                              "& .MuiSelect-icon": { color: product.is_sold ? "#EF4444" : "#10B981" },
                             }}
                           >
-                            <MenuItem value="Available">Available</MenuItem>
-                            <MenuItem value="Sold">Sold</MenuItem>
+                            <MenuItem value="available" sx={{ fontSize: 13, color: "#10B981" }}>Available</MenuItem>
+                            <MenuItem value="sold" sx={{ fontSize: 13, color: "#EF4444" }}>Sold</MenuItem>
                           </Select>
-                        )}
+                          {updatingSoldId === product.id && <CircularProgress size={16} sx={{ color: "#7C3AED" }} />}
+                        </Box>
                       </TableCell>
+
+                      {/* Created Date */}
+                      <TableCell sx={{ color: "#F8FAFC", fontSize: 13 }}>
+                        {formatDate(product.created_at)}
+                      </TableCell>
+
+                      {/* Actions */}
                       <TableCell align="right">
                         <Tooltip title="View">
-                          <IconButton size="small" onClick={() => setViewProduct(product)} sx={{ color: "#60A5FA" }}>
+                          <IconButton size="small" onClick={() => setViewItem(product)} sx={{ color: "#60A5FA" }}>
                             <Visibility fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => handleOpenEdit(product)} sx={{ color: "#94A3B8" }}>
+                          <IconButton size="small" onClick={() => openEdit(product)} sx={{ color: "#94A3B8" }}>
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -332,7 +416,7 @@ const ProductsPage: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} sx={{ textAlign: "center", py: 6, color: "#64748B" }}>
+                    <TableCell colSpan={7} sx={{ textAlign: "center", py: 6, color: "#64748B" }}>
                       No products found
                     </TableCell>
                   </TableRow>
@@ -340,232 +424,158 @@ const ProductsPage: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={filtered.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            sx={{
+              color: "#64748B",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows": { color: "#64748B", fontSize: 13 },
+              ".MuiTablePagination-select, .MuiTablePagination-selectIcon": { color: "#94A3B8" },
+              ".MuiIconButton-root": { color: "#64748B" },
+              ".MuiIconButton-root.Mui-disabled": { color: "rgba(100,116,139,0.3)" },
+            }}
+          />
         </CardContent>
       </Card>
 
-      {/* ── View Product Modal ── */}
-      <Dialog open={!!viewProduct} onClose={() => setViewProduct(null)} maxWidth="sm" fullWidth>
+      {/* ── View Dialog ── */}
+      <Dialog open={!!viewItem} onClose={() => setViewItem(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           Product Details
-          <IconButton size="small" onClick={() => setViewProduct(null)}><Close /></IconButton>
+          <IconButton size="small" onClick={() => setViewItem(null)}><Close /></IconButton>
         </DialogTitle>
-        {viewProduct && (
-          <DialogContent dividers sx={{ p: 3 }}>
-
-            {/* Image */}
-            {viewProduct.images?.[0] ? (
-              <Box
-                component="img"
-                src={viewProduct.images[0]}
-                alt={viewProduct.title}
-                sx={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 2, mb: 3 }}
-              />
-            ) : (
-              <Box sx={{ width: '100%', height: 120, borderRadius: 2, mb: 3, bgcolor: 'rgba(148,163,184,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography sx={{ color: '#64748B', fontSize: 13 }}>No Image</Typography>
-              </Box>
-            )}
-
-            {/* Product Info */}
-            <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>PRODUCT INFO</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1, mb: 3 }}>
-              <Box sx={{ gridColumn: '1 / -1' }}>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Product Name</Typography>
-                <Typography sx={{ color: '#F1F5F9', fontSize: 14, fontWeight: 600 }}>{viewProduct.title}</Typography>
-              </Box>
-              <Box sx={{ gridColumn: '1 / -1' }}>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Description</Typography>
-                <Typography sx={{ color: '#94A3B8', fontSize: 13, lineHeight: 1.6 }}>{viewProduct.description || '—'}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Category</Typography>
-                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{(viewProduct as any).categories?.name ?? '—'}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Brand</Typography>
-                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{viewProduct.brand || '—'}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Condition</Typography>
-                <Chip label={viewProduct.condition ?? 'new'} size="small" sx={{ bgcolor: 'rgba(59,130,246,0.12)', color: '#60A5FA', fontSize: 12, mt: 0.5 }} />
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Created Date</Typography>
-                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{new Date(viewProduct.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</Typography>
-              </Box>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "12px !important" }}>
+          {viewItem && [
+            ["Product Name", viewItem.title],
+            ["Brand", viewItem.brand || "—"],
+            ["Category", viewItem.categories?.name ?? "—"],
+            ["Price", `$${Number(viewItem.price).toFixed(2)}`],
+            ["Condition", viewItem.condition ?? "—"],
+            ["Status", viewItem.is_sold ? "Sold" : "Available"],
+            ["Location", viewItem.location || "—"],
+            ["Created Date", formatDate(viewItem.created_at)],
+          ].map(([label, value]) => (
+            <Box key={label}>
+              <Typography sx={{ color: "#64748B", fontSize: 12, mb: 0.5 }}>{String(label).toUpperCase()}</Typography>
+              <Typography sx={{ color: "#F1F5F9", fontSize: 14, fontWeight: 500 }}>{value}</Typography>
             </Box>
-
-            {/* Pricing */}
-            <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>PRICING</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1, mb: 3 }}>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Price</Typography>
-                <Typography sx={{ color: '#34D399', fontSize: 18, fontWeight: 700 }}>${Number(viewProduct.price).toFixed(2)}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Service Fee</Typography>
-                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{viewProduct.service_fee_percentage ?? 0}%</Typography>
-              </Box>
-            </Box>
-
-            {/* Status */}
-            <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>STATUS</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Sold Status</Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  <Chip
-                    label={viewProduct.is_sold ? 'Sold' : 'Available'}
-                    size="small"
-                    color={viewProduct.is_sold ? 'error' : 'success'}
-                  />
-                </Box>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>Location</Typography>
-                <Typography sx={{ color: '#F1F5F9', fontSize: 13 }}>{viewProduct.location || '—'}</Typography>
-              </Box>
-            </Box>
-
-          </DialogContent>
-        )}
+          ))}
+        </DialogContent>
       </Dialog>
 
-      {/* ── Add / Edit Product Modal ── */}
-      <Dialog open={formOpen} onClose={handleCloseForm} maxWidth="sm" fullWidth>
-        <DialogTitle>{editProduct ? "Edit Product" : "Add Product"}</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
-            <TextField
-              label="Product Name *"
+      {/* ── Add / Edit Dialog ── */}
+      <Dialog open={!!formDialog} onClose={() => setFormDialog(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{formDialog?.mode === "add" ? "Add Product" : "Edit Product"}</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "16px !important" }}>
+          <TextField
+            label="Product Name *"
+            fullWidth
+            size="small"
+            value={form.title}
+            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+          />
+          <TextField
+            label="Brand"
+            fullWidth
+            size="small"
+            value={form.brand}
+            onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))}
+          />
+          <TextField
+            label="Price *"
+            fullWidth
+            size="small"
+            type="number"
+            value={form.price}
+            onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+            InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+          />
+          <FormControl fullWidth size="small">
+            <InputLabel sx={{ color: "#94A3B8", "&.Mui-focused": { color: "#7C3AED" } }}>Category *</InputLabel>
+            <Select
+              label="Category *"
+              value={form.category_id}
+              onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+              sx={{
+                color: "#F1F5F9",
+                bgcolor: "rgba(255,255,255,0.05)",
+                "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.15)" },
+                "& .MuiSelect-icon": { color: "#94A3B8" },
+              }}
+            >
+              {(categories ?? []).map((c: any) => (
+                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Box>
+            <Typography sx={{ color: "#94A3B8", fontSize: 12, mb: 0.5 }}>Condition</Typography>
+            <Select
               fullWidth
               size="small"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-            <TextField
-              label="Description"
+              value={form.condition}
+              onChange={(e) => setForm((p) => ({ ...p, condition: e.target.value }))}
+              sx={{
+                color: "#F1F5F9",
+                bgcolor: "rgba(255,255,255,0.05)",
+                "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.15)" },
+                "& .MuiSelect-icon": { color: "#94A3B8" },
+              }}
+            >
+              {CONDITIONS.map((c) => (
+                <MenuItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</MenuItem>
+              ))}
+            </Select>
+          </Box>
+          <TextField
+            label="Description"
+            fullWidth
+            size="small"
+            multiline
+            rows={3}
+            value={form.description}
+            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+          />
+          <Box>
+            <Typography sx={{ color: "#94A3B8", fontSize: 12, mb: 0.5 }}>Status</Typography>
+            <Select
               fullWidth
               size="small"
-              multiline
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-            <Grid container spacing={2}>
-              <Grid size={6}>
-                <TextField
-                  label="Price *"
-                  fullWidth
-                  size="small"
-                  type="number"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-                />
-              </Grid>
-              <Grid size={6}>
-                <TextField
-                  label="Category *"
-                  fullWidth
-                  size="small"
-                  select
-                  value={form.category_id}
-                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                >
-                  {categories?.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid size={6}>
-                <TextField
-                  label="Brand"
-                  fullWidth
-                  size="small"
-                  value={form.brand}
-                  onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                />
-              </Grid>
-              <Grid size={6}>
-                <TextField
-                  label="Condition"
-                  fullWidth
-                  size="small"
-                  select
-                  value={form.condition}
-                  onChange={(e) => setForm({ ...form, condition: e.target.value })}
-                >
-                  {["new", "like new", "good", "fair", "poor"].map((c) => (
-                    <MenuItem key={c} value={c}>
-                      {c.charAt(0).toUpperCase() + c.slice(1)}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-            </Grid>
-
-            {/* Image URLs */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Images
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                <TextField
-                  size="small"
-                  placeholder="Paste image URL…"
-                  fullWidth
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddImage())}
-                />
-                <Button variant="outlined" size="small" onClick={handleAddImage} startIcon={<CloudUpload />}>
-                  Add
-                </Button>
-              </Stack>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
-                {form.images.map((img, idx) => (
-                  <Box key={idx} sx={{ position: "relative" }}>
-                    <Avatar
-                      variant="rounded"
-                      src={img}
-                      sx={{ width: 56, height: 56, borderRadius: 1.5, border: "1px solid rgba(148,163,184,0.15)" }}
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemoveImage(idx)}
-                      sx={{
-                        position: "absolute",
-                        top: -8,
-                        right: -8,
-                        bgcolor: "#EF4444",
-                        color: "#fff",
-                        width: 20,
-                        height: 20,
-                        "&:hover": { bgcolor: "#DC2626" },
-                      }}
-                    >
-                      <Close sx={{ fontSize: 14 }} />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Stack>
-            </Box>
+              value={form.is_sold ? "sold" : "available"}
+              onChange={(e) => setForm((p) => ({ ...p, is_sold: e.target.value === "sold" }))}
+              sx={{
+                color: form.is_sold ? "#EF4444" : "#10B981",
+                bgcolor: form.is_sold ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: form.is_sold ? "#EF444433" : "#10B98133",
+                },
+                "& .MuiSelect-icon": { color: form.is_sold ? "#EF4444" : "#10B981" },
+              }}
+            >
+              <MenuItem value="available" sx={{ color: "#10B981" }}>Available</MenuItem>
+              <MenuItem value="sold" sx={{ color: "#EF4444" }}>Sold</MenuItem>
+            </Select>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseForm}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit} disabled={isSaving}>
-            {isSaving ? "Saving…" : editProduct ? "Update" : "Create"}
+          <Button onClick={() => setFormDialog(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!form.title.trim() || !form.price || !form.category_id || isSaving}
+            onClick={handleSave}
+          >
+            {isSaving ? "Saving…" : formDialog?.mode === "add" ? "Create" : "Update"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* ── Delete Confirmation ── */}
+      {/* ── Delete Confirm ── */}
       <Dialog open={!!deleteId} onClose={() => setDeleteId(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Delete Product</DialogTitle>
         <DialogContent>
