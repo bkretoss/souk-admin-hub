@@ -1,4 +1,18 @@
-import { supabase } from "@/integrations/supabase/client";
+const BASE_URL = "https://ciywuwcwixbvmsezppya.supabase.co/functions/v1/product-crud";
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+const headers: HeadersInit = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${ANON_KEY}`,
+};
+
+const handleResponse = async (res: Response) => {
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message ?? `Request failed: ${res.status}`);
+  }
+  return res.json();
+};
 
 export type Product = {
   id: string;
@@ -22,32 +36,27 @@ export type Product = {
 };
 
 export const getProducts = async (): Promise<Product[]> => {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*, categories(name)")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Product[];
+  const res = await fetch(BASE_URL, { headers });
+  const data = await handleResponse(res);
+  return Array.isArray(data) ? data : (data?.data ?? []);
 };
 
 export const createProduct = async (payload: Record<string, unknown>): Promise<Product> => {
-  const { data, error } = await supabase.from("products").insert([payload]).select("*, categories(name)").single();
-  if (error) throw error;
-  return data as Product;
+  const res = await fetch(BASE_URL, { method: "POST", headers, body: JSON.stringify(payload) });
+  const data = await handleResponse(res);
+  return data?.data ?? data;
 };
 
 export const updateProduct = async (id: string, updates: Record<string, unknown>): Promise<Product> => {
-  const { data, error } = await supabase
-    .from("products")
-    .update(updates)
-    .eq("id", id)
-    .select("*, categories(name)")
-    .single();
-  if (error) throw error;
-  return data as Product;
+  const res = await fetch(`${BASE_URL}/${id}`, { method: "PUT", headers, body: JSON.stringify(updates) });
+  const data = await handleResponse(res);
+  return data?.data ?? data;
 };
 
 export const deleteProduct = async (id: string): Promise<void> => {
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) throw error;
+  const res = await fetch(`${BASE_URL}/${id}`, { method: "DELETE", headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message ?? `Delete failed: ${res.status}`);
+  }
 };

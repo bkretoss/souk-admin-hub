@@ -16,6 +16,7 @@ const CategoriesPage: React.FC = () => {
   const [viewItem, setViewItem] = useState<any>(null);
   const [formDialog, setFormDialog] = useState<{ mode: 'add' | 'edit'; data?: any } | null>(null);
   const [formName, setFormName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -44,9 +45,16 @@ const CategoriesPage: React.FC = () => {
     onError: (err: any) => toast.error(err?.message ?? 'Failed to delete category'),
   });
 
-  const openAdd = () => { setFormName(''); setFormDialog({ mode: 'add' }); };
-  const openEdit = (cat: any) => { setFormName(cat.name); setFormDialog({ mode: 'edit', data: cat }); };
+  const isNameTaken = (name: string, excludeId?: string) =>
+    (categories ?? []).some(
+      (c: any) => c.name?.trim().toLowerCase() === name.trim().toLowerCase() && c.id !== excludeId,
+    );
+
+  const openAdd = () => { setFormName(''); setNameError(null); setFormDialog({ mode: 'add' }); };
+  const openEdit = (cat: any) => { setFormName(cat.name); setNameError(null); setFormDialog({ mode: 'edit', data: cat }); };
   const handleSave = () => {
+    const excludeId = formDialog?.mode === 'edit' ? formDialog.data.id : undefined;
+    if (isNameTaken(formName, excludeId)) { setNameError('Category name already exists'); return; }
     if (formDialog?.mode === 'add') createMutation.mutate();
     else if (formDialog?.mode === 'edit') updateMutation.mutate(formDialog.data.id);
   };
@@ -200,13 +208,20 @@ const CategoriesPage: React.FC = () => {
             fullWidth
             size="small"
             value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && formName.trim() && !isSaving && handleSave()}
+            error={!!nameError}
+            helperText={nameError ?? ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormName(val);
+              const excludeId = formDialog?.mode === 'edit' ? formDialog.data.id : undefined;
+              setNameError(isNameTaken(val, excludeId) ? 'Category name already exists' : null);
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && formName.trim() && !nameError && !isSaving && handleSave()}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setFormDialog(null)}>Cancel</Button>
-          <Button variant="contained" disabled={!formName.trim() || isSaving} onClick={handleSave}>
+          <Button variant="contained" disabled={!formName.trim() || !!nameError || isSaving} onClick={handleSave}>
             {isSaving ? 'Saving…' : formDialog?.mode === 'add' ? 'Create' : 'Update'}
           </Button>
         </DialogActions>

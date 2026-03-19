@@ -49,6 +49,7 @@ const LocationsPage: React.FC = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
@@ -105,15 +106,27 @@ const LocationsPage: React.FC = () => {
     onError: () => toast.error("Failed to delete location"),
   });
 
+  const isNameTaken = (name: string, excludeId?: string) =>
+    (locations ?? []).some(
+      (l) => l.name?.trim().toLowerCase() === name.trim().toLowerCase() && l.id !== excludeId,
+    );
+
   const openAdd = () => {
     setForm(EMPTY_FORM);
+    setNameError(null);
     setFormDialog({ mode: "add" });
   };
   const openEdit = (loc: any) => {
     setForm({ name: loc.name, country: loc.country ?? "", is_active: loc.is_active ?? true });
+    setNameError(null);
     setFormDialog({ mode: "edit", data: loc });
   };
   const handleSave = () => {
+    const excludeId = formDialog?.mode === "edit" ? formDialog.data.id : undefined;
+    if (isNameTaken(form.name, excludeId)) {
+      setNameError("Location name already exists");
+      return;
+    }
     if (formDialog?.mode === "add") createMutation.mutate();
     else if (formDialog?.mode === "edit") updateMutation.mutate(formDialog.data.id);
   };
@@ -368,7 +381,14 @@ const LocationsPage: React.FC = () => {
             fullWidth
             size="small"
             value={form.name}
-            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            error={!!nameError}
+            helperText={nameError ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              setForm((p) => ({ ...p, name: val }));
+              const excludeId = formDialog?.mode === "edit" ? formDialog.data.id : undefined;
+              setNameError(isNameTaken(val, excludeId) ? "Location name already exists" : null);
+            }}
           />
           <TextField
             label="Country / Address"
@@ -402,7 +422,7 @@ const LocationsPage: React.FC = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setFormDialog(null)}>Cancel</Button>
-          <Button variant="contained" disabled={!form.name.trim() || isSaving} onClick={handleSave}>
+          <Button variant="contained" disabled={!form.name.trim() || !!nameError || isSaving} onClick={handleSave}>
             {isSaving ? "Saving…" : formDialog?.mode === "add" ? "Create" : "Update"}
           </Button>
         </DialogActions>

@@ -1,19 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getUsers } from "@/lib/api/usersApi";
+import { getOrders } from "@/lib/api/ordersApi";
 
 const ORDER_CRUD_URL = "https://ciywuwcwixbvmsezppya.supabase.co/functions/v1/order-crud";
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 export const getDashboardStats = async () => {
   const [users, products, orders, categories] = await Promise.all([
-    supabase.from("profiles").select("id", { count: "exact", head: true }).neq("role", "admin"),
+    getUsers(),
     supabase.from("products").select("id", { count: "exact", head: true }),
-    supabase.from("orders").select("id", { count: "exact", head: true }),
+    getOrders(),
     supabase.from("categories").select("id", { count: "exact", head: true }),
   ]);
   return {
-    totalUsers: users.count ?? 0,
+    totalUsers: Array.isArray(users) ? users.length : 0,
     totalProducts: products.count ?? 0,
-    totalOrders: orders.count ?? 0,
+    totalOrders: Array.isArray(orders) ? orders.length : 0,
     totalCategories: categories.count ?? 0,
   };
 };

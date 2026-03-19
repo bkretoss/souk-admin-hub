@@ -36,6 +36,7 @@ import { getUsers, createUser, updateUser, deleteUser } from "@/lib/api/usersApi
 import UserStatCards from "@/components/admin/UserStatCards";
 import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ROLES = ["user", "vendor", "moderator"];
 const EMPTY_FORM = {
@@ -58,6 +59,8 @@ const roleSx = (role: string) => ({
 });
 
 const UsersPage: React.FC = () => {
+  const { userRole } = useAuth();
+  const isAdmin = userRole?.toLowerCase() === "admin";
   const queryClient = useQueryClient();
   const [viewUser, setViewUser] = useState<any>(null);
   const [formDialog, setFormDialog] = useState<{ mode: "add" | "edit"; data?: any } | null>(null);
@@ -190,9 +193,11 @@ const UsersPage: React.FC = () => {
             Manage user accounts · {filtered.length} total
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Add />} onClick={openAdd}>
-          Add User
-        </Button>
+        {!isAdmin && (
+          <Button variant="contained" startIcon={<Add />} onClick={openAdd}>
+            Add User
+          </Button>
+        )}
       </Box>
 
       {/* Summary Cards */}
@@ -361,11 +366,13 @@ const UsersPage: React.FC = () => {
                             <Visibility fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => openEdit(user)} sx={{ color: "#94A3B8" }}>
-                            <Edit fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                        {!isAdmin && (
+                          <Tooltip title="Edit">
+                            <IconButton size="small" onClick={() => openEdit(user)} sx={{ color: "#94A3B8" }}>
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <Tooltip title="Delete">
                           <IconButton size="small" onClick={() => setDeleteId(user.id)} sx={{ color: "#EF4444" }}>
                             <Delete fontSize="small" />

@@ -36,6 +36,7 @@ import ProductStatCards from "@/components/admin/ProductStatCards";
 import { getCategories } from "@/lib/api/categoriesApi";
 import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CONDITIONS = ["new", "like new", "good", "fair", "poor"] as const;
 
@@ -51,11 +52,14 @@ const EMPTY_FORM = {
 
 const ProductsPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [viewItem, setViewItem] = useState<Product | null>(null);
   const [formDialog, setFormDialog] = useState<{ mode: "add" | "edit"; data?: Product } | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [updatingSoldId, setUpdatingSoldId] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
@@ -87,7 +91,7 @@ const ProductsPage: React.FC = () => {
         category_id: form.category_id,
         description: form.description || null,
         is_sold: form.is_sold,
-        seller_id: "00000000-0000-0000-0000-000000000000",
+        seller_id: user!.id,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -137,12 +141,44 @@ const ProductsPage: React.FC = () => {
     onError: () => toast.error("Failed to delete product"),
   });
 
+  const validate = (f: typeof form, mode: "add" | "edit", editId?: string) => {
+    const errs: Record<string, string> = {};
+    if (!f.title.trim()) {
+      errs.title = "Product name is required";
+    } else if (f.title.trim().length < 2) {
+      errs.title = "Product name must be at least 2 characters";
+    } else {
+      const duplicate = (products ?? []).find(
+        (p) => p.title.trim().toLowerCase() === f.title.trim().toLowerCase() && p.id !== editId,
+      );
+      if (duplicate) errs.title = "Product name already exists";
+    }
+    if (!f.category_id) errs.category_id = "Category is required";
+    if (!f.price) {
+      errs.price = "Price is required";
+    } else if (isNaN(Number(f.price)) || Number(f.price) <= 0) {
+      errs.price = "Price must be a valid positive number";
+    }
+    return errs;
+  };
+
+  const touchField = (field: string, f = form) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const mode = formDialog?.mode ?? "add";
+    const editId = formDialog?.data?.id;
+    setFormErrors(validate(f, mode, editId));
+  };
+
   const openAdd = () => {
     setForm(EMPTY_FORM);
+    setFormErrors({});
+    setTouched({});
     setFormDialog({ mode: "add" });
   };
 
   const openEdit = (product: Product) => {
+    setFormErrors({});
+    setTouched({});
     setForm({
       title: product.title,
       brand: product.brand ?? "",
@@ -156,8 +192,14 @@ const ProductsPage: React.FC = () => {
   };
 
   const handleSave = () => {
-    if (formDialog?.mode === "add") createMutation.mutate();
-    else if (formDialog?.mode === "edit") updateMutation.mutate(formDialog.data!.id);
+    const mode = formDialog?.mode ?? "add";
+    const editId = formDialog?.data?.id;
+    const errs = validate(form, mode, editId);
+    setFormErrors(errs);
+    setTouched({ title: true, category_id: true, price: true });
+    if (Object.keys(errs).length > 0) return;
+    if (mode === "add") createMutation.mutate();
+    else if (mode === "edit") updateMutation.mutate(editId!);
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -184,13 +226,9 @@ const ProductsPage: React.FC = () => {
   return (
     <Box>
       {/* Header */}
-      <Box
-        sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <Typography variant="h4" sx={{ color: "#F8FAFC", mb: 0.5 }}>
-            Products
-          </Typography>
+          <Typography variant="h4" sx={{ color: "#F8FAFC", mb: 0.5 }}>Products</Typography>
           <Typography variant="body2" sx={{ color: "#64748B" }}>
             Manage product listings · {products?.length ?? 0} total
           </Typography>
@@ -201,12 +239,7 @@ const ProductsPage: React.FC = () => {
       </Box>
 
       {/* Summary Cards */}
-      <ProductStatCards
-        total={totalProducts}
-        active={activeProducts}
-        sold={soldProducts}
-        isLoading={isLoading}
-      />
+      <ProductStatCards total={totalProducts} active={activeProducts} sold={soldProducts} isLoading={isLoading} />
 
       {/* Filters */}
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
@@ -329,7 +362,6 @@ const ProductsPage: React.FC = () => {
                 ) : paginated.length > 0 ? (
                   paginated.map((product) => (
                     <TableRow key={product.id} sx={{ "&:hover": { bgcolor: "rgba(148,163,184,0.04)" } }}>
-                      {/* Product Name + Brand */}
                       <TableCell>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                           <Avatar
@@ -350,17 +382,14 @@ const ProductsPage: React.FC = () => {
                         </Box>
                       </TableCell>
 
-                      {/* Category */}
                       <TableCell sx={{ color: "#94A3B8", fontSize: 13 }}>
                         {product.categories?.name ?? "—"}
                       </TableCell>
 
-                      {/* Price */}
                       <TableCell sx={{ color: "#34D399", fontWeight: 600, fontSize: 14 }}>
                         ${Number(product.price).toFixed(2)}
                       </TableCell>
 
-                      {/* Condition */}
                       <TableCell>
                         <Chip
                           label={product.condition ?? "new"}
@@ -369,7 +398,6 @@ const ProductsPage: React.FC = () => {
                         />
                       </TableCell>
 
-                      {/* Sold Status toggle */}
                       <TableCell>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <Select
@@ -402,12 +430,10 @@ const ProductsPage: React.FC = () => {
                         </Box>
                       </TableCell>
 
-                      {/* Created Date */}
                       <TableCell sx={{ color: "#F8FAFC", fontSize: 13 }}>
                         {formatDate(product.created_at)}
                       </TableCell>
 
-                      {/* Actions */}
                       <TableCell align="right">
                         <Tooltip title="View">
                           <IconButton size="small" onClick={() => setViewItem(product)} sx={{ color: "#60A5FA" }}>
@@ -491,7 +517,14 @@ const ProductsPage: React.FC = () => {
             fullWidth
             size="small"
             value={form.title}
-            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+            error={touched.title && !!formErrors.title}
+            helperText={touched.title && formErrors.title}
+            onChange={(e) => {
+              const updated = { ...form, title: e.target.value };
+              setForm(updated);
+              if (touched.title) touchField("title", updated);
+            }}
+            onBlur={() => touchField("title")}
           />
           <TextField
             label="Brand"
@@ -506,15 +539,26 @@ const ProductsPage: React.FC = () => {
             size="small"
             type="number"
             value={form.price}
-            onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+            error={touched.price && !!formErrors.price}
+            helperText={touched.price && formErrors.price}
+            onChange={(e) => {
+              const updated = { ...form, price: e.target.value };
+              setForm(updated);
+              if (touched.price) touchField("price", updated);
+            }}
+            onBlur={() => touchField("price")}
             InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
           />
-          <FormControl fullWidth size="small">
+          <FormControl fullWidth size="small" error={touched.category_id && !!formErrors.category_id}>
             <InputLabel sx={{ color: "#94A3B8", "&.Mui-focused": { color: "#7C3AED" } }}>Category *</InputLabel>
             <Select
               label="Category *"
               value={form.category_id}
-              onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+              onChange={(e) => {
+                const updated = { ...form, category_id: e.target.value };
+                setForm(updated);
+                touchField("category_id", updated);
+              }}
               sx={{
                 color: "#F1F5F9",
                 bgcolor: "rgba(255,255,255,0.05)",
@@ -526,6 +570,11 @@ const ProductsPage: React.FC = () => {
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </Select>
+            {touched.category_id && formErrors.category_id && (
+              <Typography sx={{ color: "#f44336", fontSize: "0.75rem", mt: 0.5, ml: 1.75 }}>
+                {formErrors.category_id}
+              </Typography>
+            )}
           </FormControl>
           <Box>
             <Typography sx={{ color: "#94A3B8", fontSize: 12, mb: 0.5 }}>Condition</Typography>
@@ -580,7 +629,7 @@ const ProductsPage: React.FC = () => {
           <Button onClick={() => setFormDialog(null)}>Cancel</Button>
           <Button
             variant="contained"
-            disabled={!form.title.trim() || !form.price || !form.category_id || isSaving}
+            disabled={isSaving}
             onClick={handleSave}
           >
             {isSaving ? "Saving…" : formDialog?.mode === "add" ? "Create" : "Update"}

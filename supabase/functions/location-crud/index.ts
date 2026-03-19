@@ -29,7 +29,7 @@ serve(async (req) => {
       const activeParam = url.searchParams.get("active");
       let query = client
         .from("locations")
-        .select("id, name, country, is_active")
+        .select("id, name, country, is_active, created_at")
         // .eq("country", country)
         .order("name", { ascending: true });
       if (activeParam !== "false") query = query.eq("is_active", true);
@@ -41,6 +41,8 @@ serve(async (req) => {
     // POST /location-crud
     if (req.method === "POST") {
       const body = await req.json();
+      const { data: existing } = await client.from("locations").select("id").ilike("name", body.name).maybeSingle();
+      if (existing) return json({ success: false, message: "Location name already exists" }, 409);
       const { data, error } = await client
         .from("locations")
         .insert({ name: body.name, country: body.country ?? "UAE", is_active: body.is_active ?? true })
@@ -57,6 +59,15 @@ serve(async (req) => {
       if (body.name !== undefined) updates.name = body.name;
       if (body.country !== undefined) updates.country = body.country;
       if (body.is_active !== undefined) updates.is_active = body.is_active;
+      if (updates.name !== undefined) {
+        const { data: existing } = await client
+          .from("locations")
+          .select("id")
+          .ilike("name", updates.name as string)
+          .neq("id", id)
+          .maybeSingle();
+        if (existing) return json({ success: false, message: "Location name already exists" }, 409);
+      }
       const { data, error } = await client.from("locations").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return json({ success: true, data });

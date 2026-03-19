@@ -36,6 +36,8 @@ serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json();
       if (!body.name?.trim()) return json({ success: false, message: "Name is required" }, 400);
+      const { data: existing } = await client.from("categories").select("id").ilike("name", body.name.trim()).maybeSingle();
+      if (existing) return json({ success: false, message: "Category name already exists" }, 409);
       const { data, error } = await client.from("categories").insert({ name: body.name.trim() }).select().single();
       if (error) throw error;
       return json({ success: true, data }, 201);
@@ -45,6 +47,8 @@ serve(async (req) => {
     if (req.method === "PUT" && id) {
       const body = await req.json();
       if (!body.name?.trim()) return json({ success: false, message: "Name is required" }, 400);
+      const { data: existing } = await client.from("categories").select("id").ilike("name", body.name.trim()).neq("id", id).maybeSingle();
+      if (existing) return json({ success: false, message: "Category name already exists" }, 409);
       const { data, error } = await client
         .from("categories")
         .update({ name: body.name.trim() })
