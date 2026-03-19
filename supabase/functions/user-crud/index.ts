@@ -64,7 +64,7 @@ serve(async (req) => {
     // PUT /user-crud/:id
     if (req.method === "PUT" && id) {
       const body = await req.json();
-      const allowed = ["first_name", "last_name", "phone_number", "username", "role", "gender"];
+      const allowed = ["first_name", "last_name", "phone_number", "username", "role", "gender", "is_active"];
       const updates: Record<string, unknown> = {};
       for (const key of allowed) {
         if (body[key] !== undefined) updates[key] = body[key];

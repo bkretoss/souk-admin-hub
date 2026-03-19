@@ -32,6 +32,7 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getProducts, createProduct, updateProduct, deleteProduct, type Product } from "@/lib/api/productsApi";
+import ProductStatCards from "@/components/admin/ProductStatCards";
 import { getCategories } from "@/lib/api/categoriesApi";
 import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
@@ -66,6 +67,10 @@ const ProductsPage: React.FC = () => {
     queryKey: ["products"],
     queryFn: getProducts,
   });
+
+  const totalProducts  = products?.length ?? 0;
+  const soldProducts   = products?.filter((p) => p.is_sold).length ?? 0;
+  const activeProducts = totalProducts - soldProducts;
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -194,6 +199,14 @@ const ProductsPage: React.FC = () => {
           Add Product
         </Button>
       </Box>
+
+      {/* Summary Cards */}
+      <ProductStatCards
+        total={totalProducts}
+        active={activeProducts}
+        sold={soldProducts}
+        isLoading={isLoading}
+      />
 
       {/* Filters */}
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>

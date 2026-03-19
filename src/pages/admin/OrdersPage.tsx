@@ -9,6 +9,7 @@ import { Search, Visibility, Delete, Close } from '@mui/icons-material';
 import DateRangePicker from '@/components/admin/DateRangePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrders, updateOrder, deleteOrder } from '@/lib/api/ordersApi';
+import OrderStatCards from '@/components/admin/OrderStatCards';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/dateUtils';
 
@@ -32,6 +33,13 @@ const OrdersPage: React.FC = () => {
     queryKey: ['orders', dateRange.startDate, dateRange.endDate],
     queryFn: () => getOrders(dateRange.startDate || undefined, dateRange.endDate || undefined),
   });
+
+  const allOrders    = orders ?? [];
+  const totalOrders  = allOrders.length;
+  const pendingCount    = allOrders.filter((o: any) => o.status === 'pending').length;
+  const completedCount  = allOrders.filter((o: any) => o.status === 'completed').length;
+  const shippedCount    = allOrders.filter((o: any) => o.status === 'shipped').length;
+  const cancelledCount  = allOrders.filter((o: any) => o.status === 'cancelled').length;
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) => updateOrder(id, { status }),
@@ -87,6 +95,16 @@ const OrdersPage: React.FC = () => {
           </Typography>
         </Box>
       </Box>
+
+      {/* Order Stat Cards */}
+      <OrderStatCards
+        total={totalOrders}
+        pending={pendingCount}
+        completed={completedCount}
+        shipped={shippedCount}
+        cancelled={cancelledCount}
+        isLoading={isLoading}
+      />
 
       <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField

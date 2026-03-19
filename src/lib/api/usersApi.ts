@@ -12,11 +12,13 @@ const handleResponse = async (res: Response) => {
   return body;
 };
 
-// GET /api/users
+// GET /api/users (excludes Admin role — also enforced on backend)
 export const getUsers = async () => {
-  const res = await fetch(BASE_URL, { headers });
+  const res = await fetch(`${BASE_URL}?role!=Admin`, { headers });
   const data = await handleResponse(res);
-  return Array.isArray(data) ? data : (data?.data ?? []);
+  const list = Array.isArray(data) ? data : (data?.data ?? []);
+  // Client-side safety net: strip any admin that slips through
+  return list.filter((u: Record<string, unknown>) => String(u.role ?? "").toLowerCase() !== "admin");
 };
 
 // POST /api/users

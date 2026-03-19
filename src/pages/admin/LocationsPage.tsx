@@ -36,6 +36,7 @@ import {
   updateLocationStatus,
   deleteLocation,
 } from "@/lib/api/locationsApi";
+import LocationStatCards from "@/components/admin/LocationStatCards";
 import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
 
@@ -57,6 +58,10 @@ const LocationsPage: React.FC = () => {
     queryKey: ["locations"],
     queryFn: getLocations,
   });
+
+  const totalLocations    = locations?.length ?? 0;
+  const activeLocations   = locations?.filter((l) => l.is_active).length ?? 0;
+  const inactiveLocations = totalLocations - activeLocations;
 
   const createMutation = useMutation({
     mutationFn: () => createLocation({ name: form.name, country: form.country || null, is_active: form.is_active }),
@@ -146,6 +151,14 @@ const LocationsPage: React.FC = () => {
           Add Location
         </Button>
       </Box>
+
+      {/* Summary Cards */}
+      <LocationStatCards
+        total={totalLocations}
+        active={activeLocations}
+        inactive={inactiveLocations}
+        isLoading={isLoading}
+      />
 
       {/* Filters */}
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}>
