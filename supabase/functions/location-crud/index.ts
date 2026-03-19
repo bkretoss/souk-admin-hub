@@ -30,7 +30,7 @@ serve(async (req) => {
       let query = client
         .from("locations")
         .select("id, name, country, is_active")
-        .eq("country", country)
+        // .eq("country", country)
         .order("name", { ascending: true });
       if (activeParam !== "false") query = query.eq("is_active", true);
       const { data, error } = await query;
@@ -57,12 +57,7 @@ serve(async (req) => {
       if (body.name !== undefined) updates.name = body.name;
       if (body.country !== undefined) updates.country = body.country;
       if (body.is_active !== undefined) updates.is_active = body.is_active;
-      const { data, error } = await client
-        .from("locations")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await client.from("locations").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return json({ success: true, data });
     }
