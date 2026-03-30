@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_pages: {
+        Row: {
+          id: string
+          title: string | null
+          slug: string | null
+          content: string | null
+          status: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          title?: string | null
+          slug?: string | null
+          content?: string | null
+          status?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string | null
+          slug?: string | null
+          content?: string | null
+          status?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string

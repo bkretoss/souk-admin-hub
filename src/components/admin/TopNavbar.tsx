@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  AppBar, Toolbar, InputBase, IconButton, Badge, Avatar,
-  Box, Menu, MenuItem, Typography, Divider,
+  AppBar, Toolbar, InputBase, IconButton, Avatar,
+  Box, Menu, MenuItem, Typography,
 } from '@mui/material';
-import { Search, NotificationsOutlined, FullscreenOutlined } from '@mui/icons-material';
+import { Search } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,20 +33,6 @@ const TopNavbar: React.FC = () => {
     <AppBar position="sticky" elevation={0}>
       <Toolbar sx={{ gap: 2, minHeight: '64px !important' }}>
         <Box sx={{ flex: 1 }} />
-
-        <IconButton sx={{ color: '#64748B', '&:hover': { color: '#A78BFA' } }}>
-          <FullscreenOutlined />
-        </IconButton>
-        <IconButton sx={{ color: '#64748B', '&:hover': { color: '#A78BFA' } }}>
-          <Badge badgeContent={3} sx={{
-            '& .MuiBadge-badge': {
-              fontSize: 10, minWidth: 18, height: 18,
-              bgcolor: '#7C3AED', color: '#fff',
-            },
-          }}>
-            <NotificationsOutlined />
-          </Badge>
-        </IconButton>
 
         <Box
           onClick={(e) => setAnchorEl(e.currentTarget)}
@@ -85,9 +71,6 @@ const TopNavbar: React.FC = () => {
             },
           }}
         >
-          <MenuItem sx={{ fontSize: 14, color: '#CBD5E1', '&:hover': { bgcolor: 'rgba(124, 58, 237, 0.08)' } }}>Profile</MenuItem>
-          <MenuItem sx={{ fontSize: 14, color: '#CBD5E1', '&:hover': { bgcolor: 'rgba(124, 58, 237, 0.08)' } }}>Settings</MenuItem>
-          <Divider sx={{ borderColor: 'rgba(148, 163, 184, 0.06)' }} />
           <MenuItem onClick={signOut} sx={{ fontSize: 14, color: '#F43F5E', '&:hover': { bgcolor: 'rgba(244, 63, 94, 0.08)' } }}>Logout</MenuItem>
         </Menu>
       </Toolbar>

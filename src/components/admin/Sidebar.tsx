@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import {
   Dashboard, People, ShoppingBag, ShoppingCart, Category,
-  CloudUpload, Article, Notifications, Settings, LocationOn,
+  Article, Settings, LocationOn,
   ChevronLeft, ChevronRight, Logout,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -26,10 +26,9 @@ const menuItems = [
   { text: 'Products', icon: <ShoppingBag />, path: '/admin/products' },
   { text: 'Orders', icon: <ShoppingCart />, path: '/admin/orders' },
   { text: 'Categories', icon: <Category />, path: '/admin/categories' },
+  { text: 'Sub-Categories', icon: <Category />, path: '/admin/sub-categories' },
   { text: 'Locations', icon: <LocationOn />, path: '/admin/locations' },
-  { text: 'Media', icon: <CloudUpload />, path: '/admin/media' },
   { text: 'Content', icon: <Article />, path: '/admin/content' },
-  { text: 'Notifications', icon: <Notifications />, path: '/admin/notifications' },
   { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
 ];
 

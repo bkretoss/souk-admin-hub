@@ -1,18 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface GeneralSettings {
-  appName: string;
   supportEmail: string;
-  currency: string;
   serviceFee: number;
-  enableNotifications: boolean;
-  maintenanceMode: boolean;
-}
-
-export interface SecuritySettings {
-  twoFactorAuth: boolean;
-  forcePasswordChange: boolean;
-  sessionTimeout: number;
 }
 
 export async function fetchSettings<T>(key: string): Promise<T | null> {

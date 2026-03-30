@@ -12,12 +12,13 @@ import UsersPage from "@/pages/admin/UsersPage";
 import ProductsPage from "@/pages/admin/ProductsPage";
 import OrdersPage from "@/pages/admin/OrdersPage";
 import CategoriesPage from "@/pages/admin/CategoriesPage";
+import SubCategoriesPage from "@/pages/admin/SubCategoriesPage";
 import LocationsPage from "@/pages/admin/LocationsPage";
-import MediaPage from "@/pages/admin/MediaPage";
 import ContentPage from "@/pages/admin/ContentPage";
 import NotificationsPage from "@/pages/admin/NotificationsPage";
 import SettingsPage from "@/pages/admin/SettingsPage";
 import NotFound from "@/pages/NotFound";
+import CmsPageView from "@/pages/CmsPageView";
 import { CircularProgress, Box } from "@mui/material";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/admin" replace /> : <LoginPage />} />
+      <Route path="/pages/:slug" element={<CmsPageView />} />
       <Route path="/" element={<Navigate to="/admin" replace />} />
       <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
@@ -52,8 +54,8 @@ const AppRoutes = () => {
         <Route path="products" element={<ProductsPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="categories" element={<CategoriesPage />} />
+        <Route path="sub-categories" element={<SubCategoriesPage />} />
         <Route path="locations" element={<LocationsPage />} />
-        <Route path="media" element={<MediaPage />} />
         <Route path="content" element={<ContentPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<SettingsPage />} />

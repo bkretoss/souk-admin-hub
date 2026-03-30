@@ -61,6 +61,12 @@ entrypoint = "./functions/product-crud/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/product-crud/*.html" ]
 
+[functions.content-crud]
+enabled = true
+verify_jwt = true
+import_map = "./functions/content-crud/deno.json"
+entrypoint = "./functions/content-crud/index.ts"
+
 [functions.setting]
 enabled = true
 verify_jwt = true

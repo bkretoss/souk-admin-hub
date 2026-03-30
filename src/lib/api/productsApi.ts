@@ -22,17 +22,20 @@ export type Product = {
   condition: string | null;
   is_sold: boolean;
   category_id: string;
+  sub_category_id: string | null;
   description: string | null;
   images: string[] | null;
   location: string | null;
   size: string | null;
   color: string | null;
   material: string | null;
+  pickup_address: Record<string, unknown> | null;
   service_fee_percentage: number;
   seller_id: string;
   created_at: string;
   updated_at: string;
   categories?: { name: string } | null;
+  sub_categories?: { id: string; name: string } | null;
 };
 
 export const getProducts = async (): Promise<Product[]> => {

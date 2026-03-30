@@ -23,11 +23,11 @@ serve(async (req) => {
     const lastPart = pathParts[pathParts.length - 1];
     const id = lastPart !== "product-crud" ? lastPart : null;
 
-    // GET /product-crud — fetch all products with category name
+    // GET /product-crud — fetch all products with category and sub-category name
     if (req.method === "GET") {
       const { data, error } = await client
         .from("products")
-        .select("*, categories(name)")
+        .select("*, categories(name), sub_categories(id, name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return json({ success: true, data: data ?? [], total: data?.length ?? 0 });
@@ -59,6 +59,7 @@ serve(async (req) => {
           price: Number(body.price),
           condition: body.condition ?? "new",
           category_id: body.category_id,
+          sub_category_id: body.sub_category_id || null,
           description: body.description?.trim() || null,
           is_sold: body.is_sold ?? false,
           seller_id: body.seller_id,
@@ -69,7 +70,7 @@ serve(async (req) => {
           material: body.material?.trim() || null,
           service_fee_percentage: body.service_fee_percentage ?? 0,
         })
-        .select("*, categories(name)")
+        .select("*, categories(name), sub_categories(id, name)")
         .single();
       if (error) throw error;
       return json({ success: true, data }, 201);
@@ -79,19 +80,9 @@ serve(async (req) => {
     if (req.method === "PUT" && id) {
       const body = await req.json();
       const allowed = [
-        "title",
-        "brand",
-        "price",
-        "condition",
-        "category_id",
-        "description",
-        "is_sold",
-        "images",
-        "location",
-        "size",
-        "color",
-        "material",
-        "service_fee_percentage",
+        "title", "brand", "price", "condition", "category_id", "sub_category_id",
+        "description", "is_sold", "images", "location", "size", "color",
+        "material", "service_fee_percentage",
       ];
       const updates: Record<string, unknown> = {};
       for (const key of allowed) {
@@ -119,7 +110,7 @@ serve(async (req) => {
         .from("products")
         .update(updates)
         .eq("id", id)
-        .select("*, categories(name)")
+        .select("*, categories(name), sub_categories(id, name)")
         .single();
       if (error) throw error;
       return json({ success: true, data });
