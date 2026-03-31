@@ -32,7 +32,7 @@ serve(async (req) => {
         .select("id, name, country, is_active, created_at")
         // .eq("country", country)
         .order("name", { ascending: true });
-      if (activeParam !== "false") query = query.eq("is_active", true);
+      // if (activeParam !== "false") query = query.eq("is_active", true);
       const { data, error } = await query;
       if (error) throw error;
       return json({ success: true, data: data ?? [], total: data?.length ?? 0, country });

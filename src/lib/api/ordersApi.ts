@@ -34,6 +34,17 @@ export const getOrdersByUser = async (userId: string, page = 1, limit = 10) => {
   return { orders: data?.data ?? [], total: data?.total ?? 0 };
 };
 
+// GET /api/orders?seller_id={seller_id}&page=1&limit=10
+export const getOrdersBySeller = async (sellerId: string, page = 1, limit = 10) => {
+  const params = new URLSearchParams({ seller_id: sellerId, page: String(page), limit: String(limit) });
+  const url = `${BASE_URL}?${params}`;
+  console.log("[getOrdersBySeller] Fetching from:", url);
+  const res = await fetch(url, { headers });
+  const data = await handleResponse(res);
+  console.log("[getOrdersBySeller] Response:", data);
+  return { orders: data?.data ?? [], total: data?.total ?? 0 };
+};
+
 // GET /api/orders/:id
 export const getOrderById = async (id: string) => {
   const res = await fetch(`${BASE_URL}/${id}`, { headers });

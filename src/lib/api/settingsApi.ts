@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface GeneralSettings {
-  supportEmail: string;
   serviceFee: number;
 }
 
@@ -24,6 +23,9 @@ export async function upsertSettings<T extends Record<string, unknown>>(
   key: string,
   value: T
 ): Promise<T> {
+  if (key === 'general' && typeof (value as any).serviceFee === 'number' && (value as any).serviceFee < 0) {
+    throw new Error('Service Fee cannot be a negative value.');
+  }
   const { data, error } = await supabase
     .from("settings")
     .upsert(

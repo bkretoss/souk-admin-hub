@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Chip, Skeleton, TablePagination,
+  TableContainer, TableHead, TableRow, Skeleton, TablePagination,
   TextField, Select, MenuItem, InputAdornment, IconButton, Tooltip,
   Dialog, DialogTitle, DialogContent, DialogActions, Button,
 } from '@mui/material';
@@ -13,8 +13,73 @@ import OrderStatCards from '@/components/admin/OrderStatCards';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/dateUtils';
 
-const statusColor: Record<string, 'warning' | 'info' | 'primary' | 'success' | 'error'> = {
-  pending: 'warning', processing: 'info', shipped: 'primary', completed: 'success', cancelled: 'error',
+type OrderStatus = 'pending' | 'approved' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
+
+const ORDER_STATUSES: OrderStatus[] = ['pending', 'approved', 'paid', 'shipped', 'delivered', 'cancelled'];
+
+const statusStyles: Record<OrderStatus, { bg: string; color: string; border: string }> = {
+  pending:   { bg: 'rgba(234,179,8,0.15)',   color: '#EAB308', border: 'rgba(234,179,8,0.4)' },
+  approved:  { bg: 'rgba(59,130,246,0.15)',  color: '#3B82F6', border: 'rgba(59,130,246,0.4)' },
+  paid:      { bg: 'rgba(34,197,94,0.15)',   color: '#22C55E', border: 'rgba(34,197,94,0.4)' },
+  shipped:   { bg: 'rgba(168,85,247,0.15)',  color: '#A855F7', border: 'rgba(168,85,247,0.4)' },
+  delivered: { bg: 'rgba(21,128,61,0.15)',   color: '#15803D', border: 'rgba(21,128,61,0.4)' },
+  cancelled: { bg: 'rgba(239,68,68,0.15)',   color: '#EF4444', border: 'rgba(239,68,68,0.4)' },
+};
+
+const StatusBadgeChip = ({ status }: { status: string }) => {
+  const s = statusStyles[status as OrderStatus] ?? { bg: 'rgba(148,163,184,0.15)', color: '#94A3B8', border: 'rgba(148,163,184,0.4)' };
+  return (
+    <Box component="span" sx={{
+      display: 'inline-block', px: 1.5, py: 0.4, borderRadius: '999px', fontSize: 12, fontWeight: 600,
+      textTransform: 'capitalize', bgcolor: s.bg, color: s.color, border: `1px solid ${s.border}`,
+    }}>
+      {status}
+    </Box>
+  );
+};
+
+const StatusSelect = ({
+  value, disabled, onChange,
+}: { value: string; disabled: boolean; onChange: (v: string) => void }) => {
+  const s = statusStyles[value as OrderStatus] ?? { bg: 'rgba(148,163,184,0.15)', color: '#94A3B8', border: 'rgba(148,163,184,0.4)' };
+  return (
+    <Box
+      component="select"
+      value={value}
+      disabled={disabled}
+      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
+      sx={{
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        pl: 1.5,
+        pr: '28px',
+        py: '4px',
+        borderRadius: '999px',
+        fontSize: 12,
+        fontWeight: 600,
+        textTransform: 'capitalize',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        bgcolor: s.bg,
+        color: s.color,
+        border: `1px solid ${s.border}`,
+        outline: 'none',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='${encodeURIComponent(s.color)}'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 10px center',
+        backgroundSize: '8px 5px',
+        opacity: disabled ? 0.6 : 1,
+        transition: 'border-color 0.15s',
+        '&:hover': { borderColor: s.color },
+        '& option': { bgcolor: '#1E293B', color: '#F1F5F9', fontWeight: 500 },
+      }}
+    >
+      {ORDER_STATUSES.map(st => (
+        <option key={st} value={st}>{st.charAt(0).toUpperCase() + st.slice(1)}</option>
+      ))}
+    </Box>
+  );
 };
 
 const OrdersPage: React.FC = () => {
@@ -29,15 +94,21 @@ const OrdersPage: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: rawOrders, isLoading } = useQuery({
     queryKey: ['orders', dateRange.startDate, dateRange.endDate],
     queryFn: () => getOrders(dateRange.startDate || undefined, dateRange.endDate || undefined),
   });
 
+  // Normalise legacy 'completed' → 'delivered' from DB
+  const orders = useMemo(
+    () => (rawOrders ?? []).map((o: any) => o.status === 'completed' ? { ...o, status: 'delivered' } : o),
+    [rawOrders],
+  );
+
   const allOrders    = orders ?? [];
   const totalOrders  = allOrders.length;
   const pendingCount    = allOrders.filter((o: any) => o.status === 'pending').length;
-  const completedCount  = allOrders.filter((o: any) => o.status === 'completed').length;
+  const completedCount  = allOrders.filter((o: any) => o.status === 'delivered').length;
   const shippedCount    = allOrders.filter((o: any) => o.status === 'shipped').length;
   const cancelledCount  = allOrders.filter((o: any) => o.status === 'cancelled').length;
 
@@ -138,10 +209,9 @@ const OrdersPage: React.FC = () => {
           sx={{ width: 160, ...selectSx }}
         >
           <MenuItem value="all">All</MenuItem>
-          <MenuItem value="pending">Pending</MenuItem>
-          <MenuItem value="completed">Completed</MenuItem>
-          <MenuItem value="shipped">Shipped</MenuItem>
-          <MenuItem value="cancelled">Cancelled</MenuItem>
+          {ORDER_STATUSES.map(s => (
+            <MenuItem key={s} value={s} sx={{ textTransform: 'capitalize' }}>{s}</MenuItem>
+          ))}
         </Select>
 
         <DateRangePicker
@@ -178,18 +248,11 @@ const OrdersPage: React.FC = () => {
                     <TableRow key={order.id} sx={{ '&:hover': { bgcolor: 'rgba(148,163,184,0.04)' } }}>
                       <TableCell sx={{ color: '#F8FAFC', fontSize: 13 }}>{order.product?.name ?? '—'}</TableCell>
                       <TableCell>
-                        <Select
-                          size="small"
+                        <StatusSelect
                           value={order.status}
                           disabled={updatingId === order.id}
-                          onChange={(e) => statusMutation.mutate({ id: order.id, status: e.target.value })}
-                          sx={{ fontSize: 13, minWidth: 130, ...selectSx }}
-                        >
-                          <MenuItem value="pending">Pending</MenuItem>
-                          <MenuItem value="completed">Completed</MenuItem>
-                          <MenuItem value="shipped">Shipped</MenuItem>
-                          <MenuItem value="cancelled">Cancelled</MenuItem>
-                        </Select>
+                          onChange={(val) => statusMutation.mutate({ id: order.id, status: val })}
+                        />
                       </TableCell>
                       <TableCell sx={{ color: '#94A3B8', fontSize: 13, textTransform: 'capitalize' }}>{order.delivery_type ?? '—'}</TableCell>
                       <TableCell sx={{ color: '#94A3B8', fontSize: 13 }}>{formatDate(order.created_at)}</TableCell>
@@ -260,7 +323,7 @@ const OrdersPage: React.FC = () => {
               <Box>
                 <Typography variant="caption" sx={{ color: '#64748B' }}>Status</Typography>
                 <Box sx={{ mt: 0.5 }}>
-                  <Chip label={viewOrder.status.charAt(0).toUpperCase() + viewOrder.status.slice(1)} size="small" color={statusColor[viewOrder.status] ?? 'default'} />
+                  <StatusBadgeChip status={viewOrder.status} />
                 </Box>
               </Box>
               <Box>

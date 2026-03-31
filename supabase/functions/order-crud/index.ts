@@ -23,39 +23,94 @@ serve(async (req) => {
     const lastPart = pathParts[pathParts.length - 1];
     const id = lastPart !== "order-crud" ? lastPart : null;
 
-    const enrichWithBuyer = async (orders: any[]) => {
-      if (!orders.length) return orders;
-      const buyerIds = [...new Set(orders.map((o: any) => o.buyer_id))];
-      const { data: profiles } = await client
-        .from("profiles")
-        .select("user_id, first_name, last_name, email")
-        .in("user_id", buyerIds);
-      const profileMap = Object.fromEntries((profiles ?? []).map((p: any) => [p.user_id, p]));
-      return orders.map((o: any) => ({ ...o, profile: profileMap[o.buyer_id] ?? null }));
-    };
-
-    // GET /order-crud or GET /order-crud/:id
+    // GET /order-crud or GET /order-crud/:id or GET /order-crud?user_id=...
 
     if (req.method === "GET") {
+      // Fetch single order by ID
+      if (id) {
+        const { data: orderData, error: orderError } = await client
+          .from("orders")
+          .select("id, status, created_at, updated_at, delivery_price, delivery_type, buyer_id, seller_id, product_id, shipping_address, products!orders_product_id_fkey(id, title, price, description)")
+          .eq("id", id)
+          .single();
+
+        if (orderError) {
+          if (orderError.code === "PGRST116") {
+            return json({ success: false, message: "Order not found" }, 404);
+          }
+          throw orderError;
+        }
+
+        // Fetch buyer profile
+        const { data: buyerProfile } = await client
+          .from("profiles")
+          .select("user_id, first_name, last_name, email, phone_number, created_at, is_active")
+          .eq("user_id", orderData.buyer_id)
+          .single();
+
+        // Format the response
+        const formattedOrder = {
+          id: orderData.id,
+          status: orderData.status,
+          created_at: orderData.created_at,
+          updated_at: orderData.updated_at,
+          delivery_price: orderData.delivery_price,
+          delivery_type: orderData.delivery_type,
+          buyer_id: orderData.buyer_id,
+          seller_id: orderData.seller_id,
+          product_id: orderData.product_id,
+          shipping_address: orderData.shipping_address,
+          product: orderData.products ? {
+            id: orderData.products.id,
+            name: orderData.products.title,
+            price: orderData.products.price,
+            description: orderData.products.description,
+          } : null,
+          buyer: buyerProfile ? {
+            user_id: buyerProfile.user_id,
+            first_name: buyerProfile.first_name,
+            last_name: buyerProfile.last_name,
+            email: buyerProfile.email,
+            phone_number: buyerProfile.phone_number,
+            created_at: buyerProfile.created_at,
+            is_active: buyerProfile.is_active,
+          } : null,
+        };
+
+        return json({ success: true, data: formattedOrder });
+      }
+
+      // Fetch orders filtered by user or all orders
       const userId = url.searchParams.get("user_id");
+      const sellerId = url.searchParams.get("seller_id");
+      const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"));
+      const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "10")));
+      const offset = (page - 1) * limit;
 
-      let query = client
+      let countQuery = client.from("orders").select("id", { count: "exact", head: true });
+      let dataQuery = client
         .from("orders")
-        .select("id, status, created_at, delivery_price, delivery_type, buyer_id, products!orders_product_id_fkey(title, price)")
-        .order("created_at", { ascending: false });
+        .select("id, status, created_at, delivery_price, delivery_type, buyer_id, seller_id, products!orders_product_id_fkey(title, price)")
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
 
-      if (userId) query = query.eq("buyer_id", userId);
+      if (userId) { countQuery = countQuery.eq("buyer_id", userId); dataQuery = dataQuery.eq("buyer_id", userId); }
+      if (sellerId) { countQuery = countQuery.eq("seller_id", sellerId); dataQuery = dataQuery.eq("seller_id", sellerId); }
 
-      const { data, error } = await query;
+      const [{ count }, { data, error }] = await Promise.all([countQuery, dataQuery]);
       if (error) throw error;
 
+      // Fetch all unique buyer and seller IDs
       const buyerIds = [...new Set((data ?? []).map((o: any) => o.buyer_id))];
+      const sellerIds = [...new Set((data ?? []).map((o: any) => o.seller_id))];
+      const allProfileIds = [...new Set([...buyerIds, ...sellerIds])];
+
       const profileMap: Record<string, any> = {};
-      if (buyerIds.length) {
+      if (allProfileIds.length) {
         const { data: profiles } = await client
           .from("profiles")
           .select("user_id, first_name, last_name, email")
-          .in("user_id", buyerIds);
+          .in("user_id", allProfileIds);
         (profiles ?? []).forEach((p: any) => { profileMap[p.user_id] = p; });
       }
 
@@ -65,24 +120,14 @@ serve(async (req) => {
         created_at: o.created_at,
         delivery_price: o.delivery_price,
         delivery_type: o.delivery_type,
+        buyer_id: o.buyer_id,
+        seller_id: o.seller_id,
         product: o.products ? { name: o.products.title, price: o.products.price } : null,
-        user: profileMap[o.buyer_id] ?? null,
+        buyer: profileMap[o.buyer_id] ?? null,
+        seller: profileMap[o.seller_id] ?? null,
       }));
-      return json({ success: true, data: mapped, total: mapped.length });
+      return json({ success: true, data: mapped, total: count ?? 0 });
     }
-
-    // if (req.method === "GET") {
-    //   if (id) {
-    //     const { data, error } = await client.from("orders").select("status").eq("id", id).single();
-    //     if (error) throw error;
-    //     const [enriched] = await enrichWithBuyer([data]);
-    //     return json({ success: true, data: enriched });
-    //   }
-    //   const { data, error } = await client.from("orders").select("status").order("created_at", { ascending: false });
-    //   if (error) throw error;
-    //   const enriched = await enrichWithBuyer(data ?? []);
-    //   return json({ success: true, data: enriched, total: enriched.length });
-    // }
 
     // POST /order-crud
     if (req.method === "POST") {

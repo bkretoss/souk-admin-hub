@@ -7,7 +7,6 @@ import { fetchSettings, upsertSettings, GeneralSettings } from '@/lib/api/settin
 import { toast } from '@/components/ui/sonner';
 
 const DEFAULT_GENERAL: GeneralSettings = {
-  supportEmail: 'support@soukit.com',
   serviceFee: 12.5,
 };
 
@@ -15,6 +14,7 @@ const SettingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [general, setGeneral] = useState<GeneralSettings>(DEFAULT_GENERAL);
+  const [feeError, setFeeError] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -31,6 +31,10 @@ const SettingsPage: React.FC = () => {
   }, []);
 
   const saveGeneral = async () => {
+    if (general.serviceFee < 0) {
+      setFeeError('Service Fee cannot be a negative value.');
+      return;
+    }
     setSaving(true);
     try {
       const saved = await upsertSettings('general', general as Record<string, unknown>);
@@ -62,10 +66,20 @@ const SettingsPage: React.FC = () => {
       <Card>
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-            <TextField label="Support Email" fullWidth value={general.supportEmail}
-              onChange={(e) => setGeneral({ ...general, supportEmail: e.target.value })} />
-            <TextField label="Service Fee (%)" fullWidth value={general.serviceFee} type="number"
-              onChange={(e) => setGeneral({ ...general, serviceFee: Number(e.target.value) })} />
+            <TextField
+              label="Service Fee (%)"
+              fullWidth
+              value={general.serviceFee}
+              type="number"
+              inputProps={{ min: 0 }}
+              error={!!feeError}
+              helperText={feeError}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setGeneral({ ...general, serviceFee: val });
+                setFeeError(val < 0 ? 'Service Fee cannot be a negative value.' : '');
+              }}
+            />
             <Box sx={{ gridColumn: '1 / -1' }}>
               <Button variant="contained" onClick={saveGeneral} disabled={saving}>
                 {saving ? 'Saving…' : 'Save Settings'}

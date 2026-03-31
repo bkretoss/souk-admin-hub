@@ -1,19 +1,20 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import OrderDetailsModal from "@/components/admin/OrderDetailsModal";
 import {
   Box, Typography, Card, CardContent, Avatar, Chip, Button,
   Skeleton, Divider, Grid, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Tooltip, IconButton, TablePagination,
+  Tabs, Tab,
 } from "@mui/material";
 import {
   ArrowBack, Email, Phone, Person, CalendarToday, Badge,
   LocationOn, AccountCircle, Info, Home, Fingerprint, AccessTime, Visibility,
-  ShoppingBag,
+  ShoppingBag, Store,
 } from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
 import { getUser } from "@/lib/api/usersApi";
-import { getOrdersByUser } from "@/lib/api/ordersApi";
-import { supabase } from "@/integrations/supabase/client";
+import { getOrdersByUser, getOrdersBySeller } from "@/lib/api/ordersApi";
 import { formatDate } from "@/lib/dateUtils";
 
 const roleSx = (role: string) => ({
@@ -95,6 +96,8 @@ const formatAddress = (addr: unknown): React.ReactNode => {
   return String(addr);
 };
 
+const ROWS_PER_PAGE = 10;
+
 const STATUS_COLOR: Record<string, string> = {
   pending:    "#FBBF24",
   processing: "#60A5FA",
@@ -103,31 +106,34 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled:  "#EF4444",
 };
 
-const ROWS_PER_PAGE = 10;
-
 const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
-  const navigate = useNavigate();
   const [page, setPage] = useState(0);
+  const [viewOrderId, setViewOrderId] = useState<string | null>(null);
 
-  const { data: ordersData, isLoading, isError } = useQuery({
-    queryKey: ["buyer-orders", buyerId],
-    queryFn: () => getOrdersByUser(buyerId, 1, 1000), // Get all orders for the user
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["buyer-orders", buyerId, page],
+    queryFn: async () => {
+      const { orders, total } = await getOrdersByUser(buyerId, page + 1, ROWS_PER_PAGE);
+      return {
+        total,
+        orders: (orders ?? []).map((o: any) => ({
+          id: o.id,
+          status: o.status,
+          created_at: o.created_at,
+          product_title: o.product?.name ?? "—",
+          buyer_name: o.buyer ? `${o.buyer.first_name ?? ""} ${o.buyer.last_name ?? ""}`.trim() || "—" : "—",
+          seller_name: o.seller ? `${o.seller.first_name ?? ""} ${o.seller.last_name ?? ""}`.trim() || "—" : "—",
+          total: (o.product?.price ?? 0) + (o.delivery_price ?? 0),
+        })),
+      };
+    },
     enabled: !!buyerId,
   });
 
-  const orders = ordersData?.orders?.map((o: any) => ({
-    id: o.id,
-    status: o.status,
-    created_at: o.created_at,
-    delivery_price: o.delivery_price ?? 0,
-    delivery_type: o.delivery_type,
-    product_title: o.product?.name ?? "—",
-    product_price: o.product?.price ?? 0,
-    total: (o.product?.price ?? 0) + (o.delivery_price ?? 0),
-  })) ?? [];
-
-  const paginated = orders.slice(page * ROWS_PER_PAGE, page * ROWS_PER_PAGE + ROWS_PER_PAGE);
-  const COLS = 7;
+  const orders = data?.orders ?? [];
+  const totalCount = data?.total ?? 0;
+  const paginated = orders;
+  const COLS = 9;
 
   return (
     <>
@@ -138,7 +144,7 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
         </Typography>
         {!isLoading && !isError && (
           <Chip
-            label={orders.length}
+            label={totalCount}
             size="small"
             sx={{ bgcolor: "rgba(124,58,237,0.15)", color: "#A78BFA", fontWeight: 700, fontSize: 11, height: 20 }}
           />
@@ -149,7 +155,7 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: "rgba(255,255,255,0.03)" }}>
-              {["Order ID", "Order Date", "Product", "Total Amount", "Order Status", "Products Count", "Action"].map((h) => (
+              {["Order ID", "Product Name", "Seller Name", "Total Amount", "Payment Status", "Order Status", "Order Date", "Action"].map((h) => (
                 <TableCell key={h} sx={{ color: "#64748B", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, py: 1.5 }}>
                   {h}
                 </TableCell>
@@ -174,7 +180,7 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
             ) : orders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={COLS} sx={{ textAlign: "center", py: 5, color: "#64748B" }}>
-                  This user has not placed any orders yet.
+                  This user has not placed any orders.
                 </TableCell>
               </TableRow>
             ) : (
@@ -183,14 +189,20 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
                   <TableCell sx={{ color: "#94A3B8", fontSize: 11, fontFamily: "monospace", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {order.id}
                   </TableCell>
-                  <TableCell sx={{ color: "#94A3B8", fontSize: 13, whiteSpace: "nowrap" }}>
-                    {formatDate(order.created_at)}
-                  </TableCell>
                   <TableCell sx={{ color: "#F1F5F9", fontSize: 13, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {order.product_title}
                   </TableCell>
+                  {/* <TableCell sx={{ color: "#F1F5F9", fontSize: 13, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {order.buyer_name}
+                  </TableCell> */}
+                  <TableCell sx={{ color: "#F1F5F9", fontSize: 13, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {order.seller_name}
+                  </TableCell>
                   <TableCell sx={{ color: "#34D399", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
                     ${order.total.toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <Chip label="Paid" size="small" sx={{ bgcolor: "rgba(16,185,129,0.12)", color: "#34D399", fontWeight: 600, fontSize: 11 }} />
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -203,14 +215,12 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ color: "#94A3B8", fontSize: 13, textAlign: "center" }}>1</TableCell>
+                  <TableCell sx={{ color: "#94A3B8", fontSize: 13, whiteSpace: "nowrap" }}>
+                    {formatDate(order.created_at)}
+                  </TableCell>
                   <TableCell>
                     <Tooltip title="View Order">
-                      <IconButton
-                        size="small"
-                        onClick={() => navigate(`/admin/orders/${order.id}`)}
-                        sx={{ color: "#60A5FA", "&:hover": { bgcolor: "rgba(96,165,250,0.1)" } }}
-                      >
+                      <IconButton size="small" onClick={() => setViewOrderId(order.id)} sx={{ color: "#60A5FA", "&:hover": { bgcolor: "rgba(96,165,250,0.1)" } }}>
                         <Visibility fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -222,10 +232,161 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
         </Table>
       </TableContainer>
 
-      {orders.length > ROWS_PER_PAGE && (
+      <OrderDetailsModal orderId={viewOrderId} onClose={() => setViewOrderId(null)} />
+
+      {totalCount > ROWS_PER_PAGE && (
         <TablePagination
           component="div"
-          count={orders.length}
+          count={totalCount}
+          page={page}
+          rowsPerPage={ROWS_PER_PAGE}
+          rowsPerPageOptions={[ROWS_PER_PAGE]}
+          onPageChange={(_, p) => setPage(p)}
+          sx={{
+            color: "#64748B",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows": { color: "#64748B", fontSize: 13 },
+            ".MuiIconButton-root": { color: "#64748B" },
+            ".MuiIconButton-root.Mui-disabled": { color: "rgba(100,116,139,0.3)" },
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+const SellerOrdersTable: React.FC<{ sellerId: string }> = ({ sellerId }) => {
+  const [page, setPage] = useState(0);
+  const [viewOrderId, setViewOrderId] = useState<string | null>(null);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["seller-orders", sellerId, page],
+    enabled: !!sellerId,
+    queryFn: async () => {
+      const { orders, total } = await getOrdersBySeller(sellerId, page + 1, ROWS_PER_PAGE);
+      return {
+        total,
+        orders: (orders ?? []).map((o: any) => ({
+          id: o.id,
+          status: o.status,
+          created_at: o.created_at,
+          product_title: o.product?.name ?? "—",
+          buyer_name: o.buyer ? `${o.buyer.first_name ?? ""} ${o.buyer.last_name ?? ""}`.trim() || "—" : "—",
+          seller_name: o.seller ? `${o.seller.first_name ?? ""} ${o.seller.last_name ?? ""}`.trim() || "—" : "—",
+          total: (o.product?.price ?? 0) + (o.delivery_price ?? 0),
+        })),
+      };
+    },
+  });
+
+  const orders = data?.orders ?? [];
+  const totalCount = data?.total ?? 0;
+  const paginated = orders;
+  const COLS = 9;
+
+  return (
+    <>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, mt: 1 }}>
+        <Store sx={{ color: "#7C3AED", fontSize: 16 }} />
+        <Typography sx={{ color: "#7C3AED", fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>
+          Seller Orders
+        </Typography>
+        {!isLoading && !isError && (
+          <Chip
+            label={totalCount}
+            size="small"
+            sx={{ bgcolor: "rgba(124,58,237,0.15)", color: "#A78BFA", fontWeight: 700, fontSize: 11, height: 20 }}
+          />
+        )}
+      </Box>
+
+      <TableContainer sx={{ mb: 0.5, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 1 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: "rgba(255,255,255,0.03)" }}>
+              {["Order ID", "Product Name", "Buyer Name", "Total Amount", "Payment Status", "Order Status", "Order Date", "Action"].map((h) => (
+                <TableCell key={h} sx={{ color: "#64748B", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, py: 1.5 }}>
+                  {h}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: COLS }).map((_, j) => (
+                    <TableCell key={j}><Skeleton variant="text" width="80%" /></TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : isError ? (
+              <TableRow>
+                <TableCell colSpan={COLS} sx={{ textAlign: "center", py: 4, color: "#EF4444" }}>
+                  Failed to load orders. Please try again.
+                </TableCell>
+              </TableRow>
+            ) : orders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={COLS} sx={{ textAlign: "center", py: 5, color: "#64748B" }}>
+                  This user has no seller orders.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginated.map((order) => (
+                <TableRow key={order.id} sx={{ "&:hover": { bgcolor: "rgba(148,163,184,0.04)" } }}>
+                  <TableCell sx={{ color: "#94A3B8", fontSize: 11, fontFamily: "monospace", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {order.id}
+                  </TableCell>
+                  <TableCell sx={{ color: "#F1F5F9", fontSize: 13, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {order.product_title}
+                  </TableCell>
+                  <TableCell sx={{ color: "#F1F5F9", fontSize: 13, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {order.buyer_name}
+                  </TableCell>
+                  {/* <TableCell sx={{ color: "#F1F5F9", fontSize: 13, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {order.seller_name}
+                  </TableCell> */}
+                  <TableCell sx={{ color: "#34D399", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
+                    ${order.total.toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <Chip label="Paid" size="small" sx={{ bgcolor: "rgba(16,185,129,0.12)", color: "#34D399", fontWeight: 600, fontSize: 11 }} />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={order.status}
+                      size="small"
+                      sx={{
+                        bgcolor: `${STATUS_COLOR[order.status] ?? "#94A3B8"}22`,
+                        color: STATUS_COLOR[order.status] ?? "#94A3B8",
+                        fontWeight: 600, fontSize: 11, textTransform: "capitalize",
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ color: "#94A3B8", fontSize: 13, whiteSpace: "nowrap" }}>
+                    {formatDate(order.created_at)}
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="View Order">
+                      <IconButton size="small" onClick={() => setViewOrderId(order.id)} sx={{ color: "#60A5FA", "&:hover": { bgcolor: "rgba(96,165,250,0.1)" } }}>
+                        <Visibility fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <OrderDetailsModal orderId={viewOrderId} onClose={() => setViewOrderId(null)} />
+
+      {totalCount > ROWS_PER_PAGE && (
+        <TablePagination
+          component="div"
+          count={totalCount}
           page={page}
           rowsPerPage={ROWS_PER_PAGE}
           rowsPerPageOptions={[ROWS_PER_PAGE]}
@@ -246,6 +407,7 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
 const UserDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(0);
 
   const { data: user, isLoading, isError } = useQuery({
     queryKey: ["user", id],
@@ -302,6 +464,13 @@ const UserDetailPage: React.FC = () => {
   const fullName = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
   const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase();
 
+  console.log("User data:", user);
+  console.log("User user_id:", user.user_id);
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   return (
     <Box>
       {backBtn}
@@ -322,8 +491,8 @@ const UserDetailPage: React.FC = () => {
         />
       </Box>
 
-      <Grid container spacing={3}>
-
+      {/* User Details Section - Above Tabs */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* ── Left column: avatar card ── */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: "100%" }}>
@@ -388,7 +557,7 @@ const UserDetailPage: React.FC = () => {
           </Card>
         </Grid>
 
-        {/* ── Right column: all fields ── */}
+        {/* ── Right column: user details ── */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent sx={{ p: 3 }}>
@@ -416,7 +585,7 @@ const UserDetailPage: React.FC = () => {
                 <Field icon={<Badge fontSize="inherit" />}        label="Role"      value={user.role} />
                 <Field icon={<Info fontSize="inherit" />}         label="Status"    value={user.is_active ? "Active" : "Inactive"} />
                 <Field icon={<AccessTime fontSize="inherit" />}   label="Created"   value={formatDate(user.created_at)} />
-                <Field icon={<AccessTime fontSize="inherit" />}   label="Updated"   value={formatDate(user.updated_at)} />
+                <Field icon={<AccessTime fontSize="inherit" />}   label="Updated"  value={formatDate(user.updated_at)} />
               </Box>
 
               <Divider sx={{ borderColor: "rgba(255,255,255,0.06)", mb: 3 }} />
@@ -435,10 +604,6 @@ const UserDetailPage: React.FC = () => {
                   value={formatAddress(user.collection_address)}
                 />
               </Box>
-
-              {/* Buyer Orders Section */}
-              <Divider sx={{ borderColor: "rgba(255,255,255,0.06)", mb: 3 }} />
-              <BuyerOrdersTable buyerId={user.user_id} />
 
               {/* About / Description */}
               <Divider sx={{ borderColor: "rgba(255,255,255,0.06)", mb: 3 }} />
@@ -462,6 +627,61 @@ const UserDetailPage: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Tabs Navigation */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          sx={{
+            "& .MuiTab-root": {
+              color: "#64748B",
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: 14,
+              minHeight: 48,
+              "&.Mui-selected": {
+                color: "#7C3AED",
+              },
+            },
+            "& .MuiTabs-indicator": {
+              bgcolor: "#7C3AED",
+            },
+          }}
+        >
+          <Tab label="Buyer Orders" />
+          <Tab label="Seller Orders" />
+        </Tabs>
+      </Box>
+
+      {/* Tab Content */}
+      {activeTab === 0 && (
+        <Card>
+          <CardContent sx={{ p: 3 }}>
+            {user.user_id ? (
+              <BuyerOrdersTable buyerId={user.user_id} />
+            ) : (
+              <Typography sx={{ color: "#EF4444", textAlign: "center", py: 4 }}>
+                User ID not available
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 1 && (
+        <Card>
+          <CardContent sx={{ p: 3 }}>
+            {user.user_id ? (
+              <SellerOrdersTable sellerId={user.user_id} />
+            ) : (
+              <Typography sx={{ color: "#EF4444", textAlign: "center", py: 4 }}>
+                User ID not available
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Card, CardContent, Typography, Skeleton } from '@mui/material';
 import { ShoppingCart, HourglassEmpty, CheckCircle, LocalShipping, Cancel } from '@mui/icons-material';
 
-type StatusFilter = 'all' | 'pending' | 'completed' | 'shipped' | 'cancelled';
+type StatusFilter = 'all' | 'pending' | 'delivered' | 'shipped' | 'cancelled';
 
 interface OrderStatCardsProps {
   total: number;
@@ -17,7 +17,7 @@ const CARDS = (total: number, pending: number, completed: number, shipped: numbe
   { title: 'Total Orders', value: total,     icon: <ShoppingCart />,   color: '#3B82F6' },
   { title: 'Pending',      value: pending,   icon: <HourglassEmpty />, color: '#F59E0B' },
   { title: 'Shipped',      value: shipped,   icon: <LocalShipping />,  color: '#8B5CF6' },
-  { title: 'Completed',    value: completed, icon: <CheckCircle />,    color: '#10B981' },
+  { title: 'Delivered',    value: completed, icon: <CheckCircle />,    color: '#10B981' },
   { title: 'Cancelled',    value: cancelled, icon: <Cancel />,         color: '#EF4444' },
 ];
 
