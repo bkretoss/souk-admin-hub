@@ -12,6 +12,7 @@ import {
 } from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
 import { getUser } from "@/lib/api/usersApi";
+import { getOrdersByUser } from "@/lib/api/ordersApi";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "@/lib/dateUtils";
 
@@ -104,34 +105,26 @@ const STATUS_COLOR: Record<string, string> = {
 
 const ROWS_PER_PAGE = 10;
 
-const fetchBuyerOrders = async (buyerId: string) => {
-  const { data, error } = await supabase
-    .from("orders")
-    .select("id, status, created_at, delivery_price, delivery_type, product_id, products!orders_product_id_fkey(title, price)")
-    .eq("buyer_id", buyerId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((o: any) => ({
+const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
+  const navigate = useNavigate();
+  const [page, setPage] = useState(0);
+
+  const { data: ordersData, isLoading, isError } = useQuery({
+    queryKey: ["buyer-orders", buyerId],
+    queryFn: () => getOrdersByUser(buyerId, 1, 1000), // Get all orders for the user
+    enabled: !!buyerId,
+  });
+
+  const orders = ordersData?.orders?.map((o: any) => ({
     id: o.id,
     status: o.status,
     created_at: o.created_at,
     delivery_price: o.delivery_price ?? 0,
     delivery_type: o.delivery_type,
-    product_title: o.products?.title ?? "—",
-    product_price: o.products?.price ?? 0,
-    total: ((o.products?.price ?? 0) + (o.delivery_price ?? 0)),
-  }));
-};
-
-const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
-  const navigate = useNavigate();
-  const [page, setPage] = useState(0);
-
-  const { data: orders = [], isLoading, isError } = useQuery({
-    queryKey: ["buyer-orders", buyerId],
-    queryFn: () => fetchBuyerOrders(buyerId),
-    enabled: !!buyerId,
-  });
+    product_title: o.product?.name ?? "—",
+    product_price: o.product?.price ?? 0,
+    total: (o.product?.price ?? 0) + (o.delivery_price ?? 0),
+  })) ?? [];
 
   const paginated = orders.slice(page * ROWS_PER_PAGE, page * ROWS_PER_PAGE + ROWS_PER_PAGE);
   const COLS = 7;
