@@ -10,6 +10,10 @@ export default defineConfig(() => ({
     hmr: {
       overlay: false,
     },
+    historyApiFallback: true,
+  },
+  preview: {
+    historyApiFallback: true,
   },
   plugins: [react()],
   resolve: {

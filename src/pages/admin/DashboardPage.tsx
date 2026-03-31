@@ -92,8 +92,8 @@ const DashboardPage: React.FC = () => {
                     ))
                   ) : recentOrders && recentOrders.length > 0 ? (
                     recentOrders.map((order: any) => {
-                      const customerName = order.user
-                        ? `${order.user.first_name ?? ''} ${order.user.last_name ?? ''}`.trim() || order.user.email || '—'
+                      const customerName = order.buyer
+                        ? `${order.buyer.first_name ?? ''} ${order.buyer.last_name ?? ''}`.trim() || order.buyer.email || '—'
                         : '—';
                       const total = ((order.product?.price ?? 0) + (order.delivery_price ?? 0)).toFixed(2);
                       return (

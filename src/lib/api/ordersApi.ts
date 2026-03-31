@@ -14,10 +14,10 @@ const handleResponse = async (res: Response) => {
 
 // GET /api/orders?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 export const getOrders = async (startDate?: string, endDate?: string) => {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ limit: 'all' });
   if (startDate) params.set('startDate', startDate);
   if (endDate) params.set('endDate', endDate);
-  const url = params.toString() ? `${BASE_URL}?${params}` : BASE_URL;
+  const url = `${BASE_URL}?${params}`;
   const res = await fetch(url, { headers });
   const data = await handleResponse(res);
   return Array.isArray(data) ? data : (data?.data ?? []);

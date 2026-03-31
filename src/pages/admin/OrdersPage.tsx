@@ -227,6 +227,7 @@ const OrdersPage: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell>Order ID</TableCell>
                   <TableCell>Product Name</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Delivery Type</TableCell>
@@ -238,7 +239,7 @@ const OrdersPage: React.FC = () => {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 5 }).map((_, j) => (
+                      {Array.from({ length: 6 }).map((_, j) => (
                         <TableCell key={j}><Skeleton variant="text" /></TableCell>
                       ))}
                     </TableRow>
@@ -246,6 +247,7 @@ const OrdersPage: React.FC = () => {
                 ) : paginated.length > 0 ? (
                   paginated.map((order: any) => (
                     <TableRow key={order.id} sx={{ '&:hover': { bgcolor: 'rgba(148,163,184,0.04)' } }}>
+                      <TableCell sx={{ color: '#94A3B8', fontSize: 13, fontFamily: 'monospace' }}>#{order.id.slice(0, 8)}</TableCell>
                       <TableCell sx={{ color: '#F8FAFC', fontSize: 13 }}>{order.product?.name ?? '—'}</TableCell>
                       <TableCell>
                         <StatusSelect
@@ -272,7 +274,7 @@ const OrdersPage: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} sx={{ textAlign: 'center', py: 6, color: '#64748B' }}>
+                    <TableCell colSpan={6} sx={{ textAlign: 'center', py: 6, color: '#64748B' }}>
                       No Data Found
                     </TableCell>
                   </TableRow>

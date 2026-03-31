@@ -83,16 +83,19 @@ serve(async (req) => {
       // Fetch orders filtered by user or all orders
       const userId = url.searchParams.get("user_id");
       const sellerId = url.searchParams.get("seller_id");
+      const limitParam = url.searchParams.get("limit");
+      const fetchAll = limitParam === "all";
       const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"));
-      const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "10")));
-      const offset = (page - 1) * limit;
+      const limit = fetchAll ? null : Math.min(500, Math.max(1, parseInt(limitParam ?? "10")));
+      const offset = fetchAll ? 0 : (page - 1) * limit!;
 
       let countQuery = client.from("orders").select("id", { count: "exact", head: true });
       let dataQuery = client
         .from("orders")
         .select("id, status, created_at, delivery_price, delivery_type, buyer_id, seller_id, products!orders_product_id_fkey(title, price)")
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1);
+        .order("created_at", { ascending: false });
+
+      if (!fetchAll) dataQuery = dataQuery.range(offset, offset + limit! - 1);
 
       if (userId) { countQuery = countQuery.eq("buyer_id", userId); dataQuery = dataQuery.eq("buyer_id", userId); }
       if (sellerId) { countQuery = countQuery.eq("seller_id", sellerId); dataQuery = dataQuery.eq("seller_id", sellerId); }
