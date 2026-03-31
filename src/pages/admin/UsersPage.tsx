@@ -27,7 +27,7 @@ import {
   Chip,
   Grid,
 } from "@mui/material";
-import { Add, Edit, Delete, Close, Search, Visibility } from "@mui/icons-material";
+import { Add, Edit, Delete, Search, Visibility } from "@mui/icons-material";
 import InputAdornment from "@mui/material/InputAdornment";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -37,6 +37,7 @@ import UserStatCards from "@/components/admin/UserStatCards";
 import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const ROLES = ["user", "vendor", "moderator"];
 const EMPTY_FORM = {
@@ -61,8 +62,8 @@ const roleSx = (role: string) => ({
 const UsersPage: React.FC = () => {
   const { userRole } = useAuth();
   const isAdmin = userRole?.toLowerCase() === "admin";
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [viewUser, setViewUser] = useState<any>(null);
   const [formDialog, setFormDialog] = useState<{ mode: "add" | "edit"; data?: any } | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -362,7 +363,7 @@ const UsersPage: React.FC = () => {
                       <TableCell sx={{ color: "#94A3B8", fontSize: 13 }}>{formatDate(user.created_at)}</TableCell>
                       <TableCell align="right">
                         <Tooltip title="View">
-                          <IconButton size="small" onClick={() => setViewUser(user)} sx={{ color: "#60A5FA" }}>
+                          <IconButton size="small" onClick={() => navigate(`/admin/users/${user.id}`)} sx={{ color: "#60A5FA" }}>
                             <Visibility fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -410,50 +411,6 @@ const UsersPage: React.FC = () => {
           />
         </CardContent>
       </Card>
-
-      {/* View Dialog */}
-      <Dialog open={!!viewUser} onClose={() => setViewUser(null)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          User Details
-          <IconButton size="small" onClick={() => setViewUser(null)}><Close /></IconButton>
-        </DialogTitle>
-        {viewUser && (
-          <DialogContent dividers sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-              <Avatar
-                src={viewUser.profile_image ?? undefined}
-                sx={{ width: 64, height: 64, bgcolor: "#3B82F6", fontSize: 22, fontWeight: 700 }}
-              >
-                {viewUser.first_name?.[0]}{viewUser.last_name?.[0]}
-              </Avatar>
-              <Box>
-                <Typography variant="h6" sx={{ color: "#F8FAFC" }}>
-                  {viewUser.first_name} {viewUser.last_name}
-                </Typography>
-                <Chip label={viewUser.role ?? "user"} size="small" sx={{ ...roleSx(viewUser.role), mt: 0.5 }} />
-              </Box>
-            </Box>
-            <Typography variant="caption" sx={{ color: "#7C3AED", fontWeight: 700, letterSpacing: 1 }}>
-              USER INFO
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mt: 1 }}>
-              {[
-                ["Email", viewUser.email],
-                ["Phone", viewUser.phone_number || "—"],
-                ["Username", viewUser.username || "—"],
-                ["Gender", viewUser.gender || "—"],
-                ["Status", viewUser.is_active ? "Active" : "Inactive"],
-                ["Joined", formatDate(viewUser.created_at)],
-              ].map(([label, value]) => (
-                <Box key={label}>
-                  <Typography variant="caption" sx={{ color: "#64748B" }}>{label}</Typography>
-                  <Typography sx={{ color: "#F1F5F9", fontSize: 13 }}>{value}</Typography>
-                </Box>
-              ))}
-            </Box>
-          </DialogContent>
-        )}
-      </Dialog>
 
       {/* Add / Edit Dialog */}
       <Dialog open={!!formDialog} onClose={() => setFormDialog(null)} maxWidth="sm" fullWidth>

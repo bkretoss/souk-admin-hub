@@ -30,7 +30,6 @@ export type Product = {
   color: string | null;
   material: string | null;
   pickup_address: Record<string, unknown> | null;
-  service_fee_percentage: number;
   seller_id: string;
   created_at: string;
   updated_at: string;
@@ -42,6 +41,12 @@ export const getProducts = async (): Promise<Product[]> => {
   const res = await fetch(BASE_URL, { headers });
   const data = await handleResponse(res);
   return Array.isArray(data) ? data : (data?.data ?? []);
+};
+
+export const getProduct = async (id: string): Promise<Product> => {
+  const res = await fetch(`${BASE_URL}/${id}`, { headers });
+  const data = await handleResponse(res);
+  return data?.data ?? data;
 };
 
 export const createProduct = async (payload: Record<string, unknown>): Promise<Product> => {

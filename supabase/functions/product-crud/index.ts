@@ -23,7 +23,18 @@ serve(async (req) => {
     const lastPart = pathParts[pathParts.length - 1];
     const id = lastPart !== "product-crud" ? lastPart : null;
 
-    // GET /product-crud — fetch all products with category and sub-category name
+    // GET /product-crud/:id
+    if (req.method === "GET" && id) {
+      const { data, error } = await client
+        .from("products")
+        .select("*, categories(name), sub_categories(id, name)")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      return json({ success: true, data });
+    }
+
+    // GET /product-crud
     if (req.method === "GET") {
       const { data, error } = await client
         .from("products")
@@ -43,14 +54,6 @@ serve(async (req) => {
       if (!body.category_id) return json({ success: false, message: "Category is required" }, 400);
       if (!body.seller_id) return json({ success: false, message: "Seller is required" }, 400);
 
-      // Unique title check
-      const { data: existing } = await client
-        .from("products")
-        .select("id")
-        .ilike("title", body.title.trim())
-        .maybeSingle();
-      if (existing) return json({ success: false, message: "Product name already exists" }, 409);
-
       const { data, error } = await client
         .from("products")
         .insert({
@@ -68,7 +71,6 @@ serve(async (req) => {
           size: body.size?.trim() || null,
           color: body.color?.trim() || null,
           material: body.material?.trim() || null,
-          service_fee_percentage: body.service_fee_percentage ?? 0,
         })
         .select("*, categories(name), sub_categories(id, name)")
         .single();
@@ -81,8 +83,7 @@ serve(async (req) => {
       const body = await req.json();
       const allowed = [
         "title", "brand", "price", "condition", "category_id", "sub_category_id",
-        "description", "is_sold", "images", "location", "size", "color",
-        "material", "service_fee_percentage",
+        "description", "is_sold", "images", "location", "size", "color", "material",
       ];
       const updates: Record<string, unknown> = {};
       for (const key of allowed) {
@@ -92,14 +93,6 @@ serve(async (req) => {
         const titleStr = String(updates.title).trim();
         if (!titleStr) return json({ success: false, message: "Product name cannot be empty" }, 400);
         if (titleStr.length < 2) return json({ success: false, message: "Product name must be at least 2 characters" }, 400);
-        // Unique title check (exclude current product)
-        const { data: existing } = await client
-          .from("products")
-          .select("id")
-          .ilike("title", titleStr)
-          .neq("id", id)
-          .maybeSingle();
-        if (existing) return json({ success: false, message: "Product name already exists" }, 409);
         updates.title = titleStr;
       }
       if (updates.price !== undefined && (isNaN(Number(updates.price)) || Number(updates.price) <= 0))

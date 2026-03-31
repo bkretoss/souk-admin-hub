@@ -12,6 +12,13 @@ const handleResponse = async (res: Response) => {
   return body;
 };
 
+// GET /api/users/:id
+export const getUser = async (id: string) => {
+  const res = await fetch(`${BASE_URL}/${id}`, { headers });
+  const data = await handleResponse(res);
+  return data?.data ?? data;
+};
+
 // GET /api/users (excludes Admin role — also enforced on backend)
 export const getUsers = async () => {
   const res = await fetch(`${BASE_URL}?role!=Admin`, { headers });

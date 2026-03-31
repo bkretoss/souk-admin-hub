@@ -9,8 +9,10 @@ import LoginPage from "@/pages/LoginPage";
 import AdminLayout from "@/components/admin/AdminLayout";
 import DashboardPage from "@/pages/admin/DashboardPage";
 import UsersPage from "@/pages/admin/UsersPage";
+import UserDetailPage from "@/pages/admin/UserDetailPage";
 import ProductsPage from "@/pages/admin/ProductsPage";
 import OrdersPage from "@/pages/admin/OrdersPage";
+import OrderDetailPage from "@/pages/admin/OrderDetailPage";
 import CategoriesPage from "@/pages/admin/CategoriesPage";
 import SubCategoriesPage from "@/pages/admin/SubCategoriesPage";
 import LocationsPage from "@/pages/admin/LocationsPage";
@@ -51,8 +53,10 @@ const AppRoutes = () => {
       <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="users/:id" element={<UserDetailPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/:id" element={<OrderDetailPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="sub-categories" element={<SubCategoriesPage />} />
         <Route path="locations" element={<LocationsPage />} />

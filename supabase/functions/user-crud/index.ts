@@ -32,6 +32,17 @@ serve(async (req) => {
     const lastPart = pathParts[pathParts.length - 1];
     const id = lastPart !== "user-crud" ? lastPart : null;
 
+    // GET /user-crud/:id
+    if (req.method === "GET" && id) {
+      const { data, error } = await client
+        .from("profiles")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      return json({ success: true, data });
+    }
+
     // GET /user-crud
     if (req.method === "GET") {
       const { data, error } = await client

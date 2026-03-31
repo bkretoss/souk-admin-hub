@@ -37,18 +37,27 @@ serve(async (req) => {
     // GET /order-crud or GET /order-crud/:id
 
     if (req.method === "GET") {
-      const { data, error } = await client
+      const userId = url.searchParams.get("user_id");
+
+      let query = client
         .from("orders")
         .select("id, status, created_at, delivery_price, delivery_type, buyer_id, products!orders_product_id_fkey(title, price)")
         .order("created_at", { ascending: false });
+
+      if (userId) query = query.eq("buyer_id", userId);
+
+      const { data, error } = await query;
       if (error) throw error;
 
       const buyerIds = [...new Set((data ?? []).map((o: any) => o.buyer_id))];
-      const { data: profiles } = await client
-        .from("profiles")
-        .select("user_id, first_name, last_name, email")
-        .in("user_id", buyerIds);
-      const profileMap = Object.fromEntries((profiles ?? []).map((p: any) => [p.user_id, p]));
+      const profileMap: Record<string, any> = {};
+      if (buyerIds.length) {
+        const { data: profiles } = await client
+          .from("profiles")
+          .select("user_id, first_name, last_name, email")
+          .in("user_id", buyerIds);
+        (profiles ?? []).forEach((p: any) => { profileMap[p.user_id] = p; });
+      }
 
       const mapped = (data ?? []).map((o: any) => ({
         id: o.id,
