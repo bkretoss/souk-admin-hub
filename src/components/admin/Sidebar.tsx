@@ -5,8 +5,7 @@ import {
 } from '@mui/material';
 import {
   Dashboard, People, ShoppingBag, ShoppingCart, Category,
-  Article, Settings, LocationOn,
-  ChevronLeft, ChevronRight, Logout,
+  Article, Settings, Logout,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +26,7 @@ const menuItems = [
   { text: 'Orders', icon: <ShoppingCart />, path: '/admin/orders' },
   { text: 'Categories', icon: <Category />, path: '/admin/categories' },
   { text: 'Sub-Categories', icon: <Category />, path: '/admin/sub-categories' },
-  { text: 'Locations', icon: <LocationOn />, path: '/admin/locations' },
+
   { text: 'Content', icon: <Article />, path: '/admin/content' },
   { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
 ];
@@ -83,9 +82,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           alt="Souk IT"
           sx={{ height: 56, maxWidth: open ? 160 : 48, objectFit: 'contain', transition: 'max-width 0.25s cubic-bezier(.4,0,.2,1)', flexShrink: 0 }}
         />
-        <IconButton onClick={onToggle} sx={{ ml: 'auto', color: '#64748B', '&:hover': { color: '#A78BFA' } }}>
-          {open ? <ChevronLeft /> : <ChevronRight />}
-        </IconButton>
       </Box>
 
       <Divider sx={{ borderColor: 'rgba(148, 163, 184, 0.06)', mx: 1.5 }} />

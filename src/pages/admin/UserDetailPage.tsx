@@ -9,28 +9,13 @@ import {
 } from "@mui/material";
 import {
   ArrowBack, Email, Phone, Person, CalendarToday, Badge,
-  LocationOn, AccountCircle, Info, Home, Fingerprint, AccessTime, Visibility,
+  LocationOn, AccountCircle, Info, Home, AccessTime, Visibility,
   ShoppingBag, Store,
 } from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
 import { getUser } from "@/lib/api/usersApi";
 import { getOrdersByUser, getOrdersBySeller } from "@/lib/api/ordersApi";
 import { formatDate } from "@/lib/dateUtils";
-
-const roleSx = (role: string) => ({
-  bgcolor:
-    role === "vendor"    ? "rgba(245,158,11,0.15)"  :
-    role === "moderator" ? "rgba(16,185,129,0.15)"  :
-                           "rgba(59,130,246,0.15)",
-  color:
-    role === "vendor"    ? "#FBBF24" :
-    role === "moderator" ? "#34D399" :
-                           "#60A5FA",
-  fontWeight: 700,
-  fontSize: 13,
-  textTransform: "capitalize" as const,
-  px: 1.5,
-});
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <Typography sx={{
@@ -140,7 +125,7 @@ const BuyerOrdersTable: React.FC<{ buyerId: string }> = ({ buyerId }) => {
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, mt: 1 }}>
         <ShoppingBag sx={{ color: "#7C3AED", fontSize: 16 }} />
         <Typography sx={{ color: "#7C3AED", fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>
-          Buyer Orders
+          Buy Orders
         </Typography>
         {!isLoading && !isError && (
           <Chip
@@ -289,7 +274,7 @@ const SellerOrdersTable: React.FC<{ sellerId: string }> = ({ sellerId }) => {
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, mt: 1 }}>
         <Store sx={{ color: "#7C3AED", fontSize: 16 }} />
         <Typography sx={{ color: "#7C3AED", fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>
-          Seller Orders
+          Sell Orders
         </Typography>
         {!isLoading && !isError && (
           <Chip
@@ -516,9 +501,6 @@ const UserDetailPage: React.FC = () => {
                 </Typography>
               </Box>
 
-              {/* Role chip */}
-              <Chip label={user.role ?? "user"} sx={roleSx(user.role ?? "user")} />
-
               <Divider sx={{ width: "100%", borderColor: "rgba(255,255,255,0.06)" }} />
 
               {/* Quick stats */}
@@ -527,9 +509,7 @@ const UserDetailPage: React.FC = () => {
 
                 {[
                   { label: "Status",   value: user.is_active ? "Active" : "Inactive", color: user.is_active ? "#34D399" : "#64748B" },
-                  { label: "Role",     value: user.role ?? "user" },
                   { label: "Joined",   value: formatDate(user.created_at) },
-                  { label: "Updated",  value: formatDate(user.updated_at) },
                 ].map(({ label, value, color }) => (
                   <Box key={label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <Typography sx={{ color: "#64748B", fontSize: 13 }}>{label}</Typography>
@@ -574,7 +554,6 @@ const UserDetailPage: React.FC = () => {
                 <Field icon={<Info fontSize="inherit" />}          label="Gender"        value={user.gender} />
                 <Field icon={<CalendarToday fontSize="inherit" />} label="Date of Birth" value={user.date_of_birth} />
                 <Field icon={<LocationOn fontSize="inherit" />}    label="Country Code"  value={user.country_code} />
-                <Field icon={<Fingerprint fontSize="inherit" />}   label="User ID (Auth)" value={user.user_id} />
               </Box>
 
               <Divider sx={{ borderColor: "rgba(255,255,255,0.06)", mb: 3 }} />
@@ -582,10 +561,8 @@ const UserDetailPage: React.FC = () => {
               {/* Account Details */}
               <SectionLabel>Account Details</SectionLabel>
               <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2.5, mb: 3 }}>
-                <Field icon={<Badge fontSize="inherit" />}        label="Role"      value={user.role} />
                 <Field icon={<Info fontSize="inherit" />}         label="Status"    value={user.is_active ? "Active" : "Inactive"} />
                 <Field icon={<AccessTime fontSize="inherit" />}   label="Created"   value={formatDate(user.created_at)} />
-                <Field icon={<AccessTime fontSize="inherit" />}   label="Updated"  value={formatDate(user.updated_at)} />
               </Box>
 
               <Divider sx={{ borderColor: "rgba(255,255,255,0.06)", mb: 3 }} />
@@ -615,12 +592,7 @@ const UserDetailPage: React.FC = () => {
                   value={user.user_description}
                   wide
                 />
-                <Field
-                  icon={<Fingerprint fontSize="inherit" />}
-                  label="FCM Token"
-                  value={user.fcm_token}
-                  wide
-                />
+
               </Box>
 
             </CardContent>
@@ -649,8 +621,8 @@ const UserDetailPage: React.FC = () => {
             },
           }}
         >
-          <Tab label="Buyer Orders" />
-          <Tab label="Seller Orders" />
+          <Tab label="Buy Orders" />
+          <Tab label="Sell Orders" />
         </Tabs>
       </Box>
 

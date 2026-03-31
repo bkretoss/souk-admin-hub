@@ -197,7 +197,7 @@ const ProductsPage: React.FC = () => {
             Manage product listings · {totalProducts} total
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Add />} onClick={openAdd}>Add Product</Button>
+
       </Box>
 
       <ProductStatCards total={totalProducts} active={activeProducts} sold={soldProducts} isLoading={isLoading} />
@@ -313,7 +313,6 @@ const ProductsPage: React.FC = () => {
                       <TableCell sx={{ color: "#94A3B8", fontSize: 13 }}>{formatDate(product.created_at)}</TableCell>
                       <TableCell align="right">
                         <Tooltip title="View"><IconButton size="small" onClick={() => setViewItem(product)} sx={{ color: "#60A5FA" }}><Visibility fontSize="small" /></IconButton></Tooltip>
-                        <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(product)} sx={{ color: "#94A3B8" }}><Edit fontSize="small" /></IconButton></Tooltip>
                         <Tooltip title="Delete"><IconButton size="small" onClick={() => setDeleteId(product.id)} sx={{ color: "#EF4444" }}><Delete fontSize="small" /></IconButton></Tooltip>
                       </TableCell>
                     </TableRow>

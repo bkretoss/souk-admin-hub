@@ -8,7 +8,7 @@ import {
 import { Search, Visibility, Delete, Close } from '@mui/icons-material';
 import DateRangePicker from '@/components/admin/DateRangePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getOrders, updateOrder, deleteOrder } from '@/lib/api/ordersApi';
+import { getOrders, deleteOrder } from '@/lib/api/ordersApi';
 import OrderStatCards from '@/components/admin/OrderStatCards';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/dateUtils';
@@ -38,49 +38,6 @@ const StatusBadgeChip = ({ status }: { status: string }) => {
   );
 };
 
-const StatusSelect = ({
-  value, disabled, onChange,
-}: { value: string; disabled: boolean; onChange: (v: string) => void }) => {
-  const s = statusStyles[value as OrderStatus] ?? { bg: 'rgba(148,163,184,0.15)', color: '#94A3B8', border: 'rgba(148,163,184,0.4)' };
-  return (
-    <Box
-      component="select"
-      value={value}
-      disabled={disabled}
-      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
-      sx={{
-        appearance: 'none',
-        WebkitAppearance: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        pl: 1.5,
-        pr: '28px',
-        py: '4px',
-        borderRadius: '999px',
-        fontSize: 12,
-        fontWeight: 600,
-        textTransform: 'capitalize',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        bgcolor: s.bg,
-        color: s.color,
-        border: `1px solid ${s.border}`,
-        outline: 'none',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='${encodeURIComponent(s.color)}'/%3E%3C/svg%3E")`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 10px center',
-        backgroundSize: '8px 5px',
-        opacity: disabled ? 0.6 : 1,
-        transition: 'border-color 0.15s',
-        '&:hover': { borderColor: s.color },
-        '& option': { bgcolor: '#1E293B', color: '#F1F5F9', fontWeight: 500 },
-      }}
-    >
-      {ORDER_STATUSES.map(st => (
-        <option key={st} value={st}>{st.charAt(0).toUpperCase() + st.slice(1)}</option>
-      ))}
-    </Box>
-  );
-};
 
 const OrdersPage: React.FC = () => {
   const [page, setPage] = useState(0);
@@ -90,8 +47,6 @@ const OrdersPage: React.FC = () => {
   const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const [viewOrder, setViewOrder] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-
   const queryClient = useQueryClient();
 
   const { data: rawOrders, isLoading } = useQuery({
@@ -111,17 +66,6 @@ const OrdersPage: React.FC = () => {
   const completedCount  = allOrders.filter((o: any) => o.status === 'delivered').length;
   const shippedCount    = allOrders.filter((o: any) => o.status === 'shipped').length;
   const cancelledCount  = allOrders.filter((o: any) => o.status === 'cancelled').length;
-
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => updateOrder(id, { status }),
-    onMutate: ({ id }) => setUpdatingId(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast.success('Order status updated successfully');
-    },
-    onError: () => toast.error('Failed to update order status'),
-    onSettled: () => setUpdatingId(null),
-  });
 
   const deleteMutation = useMutation({
     mutationFn: deleteOrder,
@@ -250,11 +194,7 @@ const OrdersPage: React.FC = () => {
                       <TableCell sx={{ color: '#94A3B8', fontSize: 13, fontFamily: 'monospace' }}>#{order.id.slice(0, 8)}</TableCell>
                       <TableCell sx={{ color: '#F8FAFC', fontSize: 13 }}>{order.product?.name ?? '—'}</TableCell>
                       <TableCell>
-                        <StatusSelect
-                          value={order.status}
-                          disabled={updatingId === order.id}
-                          onChange={(val) => statusMutation.mutate({ id: order.id, status: val })}
-                        />
+                        <StatusBadgeChip status={order.status} />
                       </TableCell>
                       <TableCell sx={{ color: '#94A3B8', fontSize: 13, textTransform: 'capitalize' }}>{order.delivery_type ?? '—'}</TableCell>
                       <TableCell sx={{ color: '#94A3B8', fontSize: 13 }}>{formatDate(order.created_at)}</TableCell>
