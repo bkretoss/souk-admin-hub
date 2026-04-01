@@ -80,7 +80,7 @@ const OrdersPage: React.FC = () => {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return (orders ?? []).filter((o: any) => {
-      const matchSearch = !q || o.product?.name?.toLowerCase().includes(q);
+      const matchSearch = !q || o.product?.name?.toLowerCase().includes(q) || o.id.toLowerCase().includes(q);
       const matchStatus = statusFilter === 'all' || o.status === statusFilter;
       return matchSearch && matchStatus;
     });
@@ -124,7 +124,7 @@ const OrdersPage: React.FC = () => {
       <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
           size="small"
-          placeholder="Search by product name…"
+          placeholder="Search by order ID or product name…"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
           InputProps={{
@@ -298,7 +298,7 @@ const OrdersPage: React.FC = () => {
             </Box>
 
             {/* User Info */}
-            <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>USER INFO</Typography>
+            {/* <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: 1 }}>USER INFO</Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
               <Box>
                 <Typography variant="caption" sx={{ color: '#64748B' }}>User Name</Typography>
@@ -310,7 +310,7 @@ const OrdersPage: React.FC = () => {
                 <Typography variant="caption" sx={{ color: '#64748B' }}>User Email</Typography>
                 <Typography sx={{ color: '#F1F5F9', fontSize: 13, wordBreak: 'break-all' }}>{viewOrder.user?.email ?? '—'}</Typography>
               </Box>
-            </Box>
+            </Box> */}
 
           </DialogContent>
         )}

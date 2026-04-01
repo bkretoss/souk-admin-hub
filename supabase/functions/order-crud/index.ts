@@ -97,8 +97,13 @@ serve(async (req) => {
 
       if (!fetchAll) dataQuery = dataQuery.range(offset, offset + limit! - 1);
 
+      const startDate = url.searchParams.get("startDate");
+      const endDate = url.searchParams.get("endDate");
+
       if (userId) { countQuery = countQuery.eq("buyer_id", userId); dataQuery = dataQuery.eq("buyer_id", userId); }
       if (sellerId) { countQuery = countQuery.eq("seller_id", sellerId); dataQuery = dataQuery.eq("seller_id", sellerId); }
+      if (startDate) { countQuery = countQuery.gte("created_at", `${startDate}T00:00:00`); dataQuery = dataQuery.gte("created_at", `${startDate}T00:00:00`); }
+      if (endDate) { countQuery = countQuery.lte("created_at", `${endDate}T23:59:59`); dataQuery = dataQuery.lte("created_at", `${endDate}T23:59:59`); }
 
       const [{ count }, { data, error }] = await Promise.all([countQuery, dataQuery]);
       if (error) throw error;

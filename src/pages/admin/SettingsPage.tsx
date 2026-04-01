@@ -67,7 +67,7 @@ const SettingsPage: React.FC = () => {
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
             <TextField
-              label="Service Fee (%)"
+              label="Buyer protection fee (%)"
               fullWidth
               value={general.serviceFee}
               type="number"
